@@ -38,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
+    private final com.eventhub.services.TicketService ticketService;
 
     @Override
     @Transactional
@@ -137,7 +138,10 @@ public class PaymentServiceImpl implements PaymentService {
                 }
             }
 
-            log.info("Payment {} SUCCESS. Booking {} CONFIRMED and seats marked as SOLD.",
+            // Issue e-tickets
+            ticketService.generateTicketsForBooking(booking);
+
+            log.info("Payment {} SUCCESS. Booking {} CONFIRMED, seats marked SOLD, and e-tickets issued.",
                     payment.getTransactionCode(), booking.getBookingCode());
         } else {
             payment.setStatus(PaymentStatus.FAILED);

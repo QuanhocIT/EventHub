@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đã hoàn thành **Phase 6: Module Payment & Xử Lý Idempotency**. Đang chuẩn bị **Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (49/49 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in**. Đang chuẩn bị **Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (56/56 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -74,11 +74,13 @@
 - [x] Xử lý callback/webhook idempotent với `Idempotency-Key` (ngăn chặn duplicate payment khi client retry hoặc network lag).
 - [x] Tự động xác nhận `Booking` sang `CONFIRMED`, chuyển ghế sang `SOLD` và dọn dẹp Redis hold khi thanh toán thành công.
 
-### Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in
+### Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in *(Đã hoàn thành)*
 
-- [ ] Thiết kế Entity `Ticket` liên kết với `BookingItem`.
-- [ ] Thư viện sinh mã QR (ZXing) chứa token vé an toàn.
-- [ ] API soát vé Check-in cho `ROLE_STAFF` tại cổng sự kiện: Chuyển trạng thái vé sang `USED`, từ chối check-in lần 2.
+- [x] Thiết kế Entity `Ticket` liên kết với `BookingItem` và `EventSeat`.
+- [x] Tích hợp thư viện Google ZXing sinh mã QR Code Base64 (`QrCodeService`).
+- [x] Tự động phát hành vé khi thanh toán đơn hàng thành công (`TicketService.generateTicketsForBooking`).
+- [x] API xem vé của người dùng (`GET /api/v1/tickets/my`) kèm hình ảnh mã QR.
+- [x] API soát vé Check-in tại cổng (`POST /api/v1/tickets/{ticketCode}/check-in`) cho `ROLE_STAFF`: Chuyển trạng thái vé sang `USED`, ghi nhận thời gian & nhân viên, từ chối check-in lần 2 (Anti-passback).
 
 ### Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)
 

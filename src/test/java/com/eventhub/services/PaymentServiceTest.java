@@ -56,6 +56,9 @@ class PaymentServiceTest {
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Mock
+    private com.eventhub.services.TicketService ticketService;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
