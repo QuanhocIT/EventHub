@@ -118,6 +118,17 @@
 - [x] Tích hợp tự động vào quy trình đặt vé `Booking` (tính toán `subtotalAmount`, `discountAmount`, `totalAmount`).
 - [x] Xây dựng `DataSeeder` tự động nạp sẵn dữ liệu mẫu thực tế: 5 địa điểm nổi tiếng Việt Nam (Mỹ Đình, NCC, Phú Thọ, Nhà hát Lớn, SECC), 6 danh mục sự kiện, 6 sự kiện phong phú đầy đủ các hạng vé, 3 mã coupon và đơn hàng demo với e-ticket QR Code để Dashboard hiển thị số liệu trực quan ngay khi khởi động.
 
+### Phase 13: Module Quản Lý Tài Khoản Cá Nhân & Quản Trị Người Dùng (Admin User Management) *(Đã hoàn thành)*
+
+- [x] Bổ sung các trường `phoneNumber`, `avatarUrl` vào Entity `User`.
+- [x] Xây dựng API quản lý hồ sơ cá nhân: `GET /api/v1/users/me` và `PUT /api/v1/users/me` (Cập nhật họ tên, SĐT, avatar).
+- [x] Quy trình đổi mật khẩu an toàn: `PUT /api/v1/users/me/change-password` (Kiểm tra mật khẩu cũ bằng BCrypt, so khớp xác nhận mật khẩu, không cho phép đặt lại mật khẩu cũ).
+- [x] Bộ công cụ quản trị người dùng cho `ROLE_ADMIN`:
+  - Tìm kiếm người dùng đa tiêu chí (keyword, role, enabled), phân trang và sắp xếp: `GET /api/v1/users`.
+  - Khóa / Kích hoạt tài khoản: `PATCH /api/v1/users/{id}/status` (Bảo vệ nghiệp vụ: Ngăn chặn Admin tự khóa tài khoản của chính mình).
+  - Thay đổi phân quyền vai trò: `PATCH /api/v1/users/{id}/role` (Bảo vệ nghiệp vụ: Ngăn chặn Admin tự hạ quyền của chính mình).
+- [x] Viết Unit Tests toàn diện với 12 test cases cho `UserServiceTest`.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -131,3 +142,4 @@
 - **Containerization & Production (Phase 10)**: Multi-stage Docker build giảm thiểu image size và tăng tính bảo mật (Non-root user); Cấu hình JVM GC & RAM percentage tối ưu trong môi trường container Kubernetes/Docker.
 - **Dynamic Queries & Criteria API (Phase 11)**: Tại sao nên dùng Spring Data JPA `Specification` thay cho việc nối chuỗi String query? Cơ chế compile-time type safety và chống SQL Injection.
 - **Promotions & Concurrency Safety (Phase 12)**: Giải quyết bài toán concurrency với mã giảm giá số lượng có hạn; Quản lý vòng đời khuyến mãi và cơ chế bù trừ (compensation transaction) khi đơn hàng hủy.
+- **User Management & Business Safety Guards (Phase 13)**: Thiết kế API đổi mật khẩu an toàn; Kỹ thuật Self-Protection Guards (ngăn chặn Admin tự khóa hoặc tự tước quyền quản trị của chính mình, bảo vệ tính toàn vẹn hệ thống).

@@ -81,12 +81,13 @@ public class DataSeeder implements CommandLineRunner {
 
     private void ensureUsersSeeded() {
         if (userRepository.count() == 0) {
-            log.info("Seeding initial users...");
             userRepository.save(User.builder()
                     .username("admin")
                     .email("admin@eventhub.com")
                     .password(passwordEncoder.encode("admin123"))
                     .fullName("EventHub Administrator")
+                    .phoneNumber("0901234567")
+                    .avatarUrl("https://images.unsplash.com/photo-1472099645785-5658abf4ff4e")
                     .role(UserRole.ROLE_ADMIN)
                     .enabled(true)
                     .build());
@@ -96,6 +97,8 @@ public class DataSeeder implements CommandLineRunner {
                     .email("organizer@eventhub.com")
                     .password(passwordEncoder.encode("organizer123"))
                     .fullName("Event Organizer Pro")
+                    .phoneNumber("0912345678")
+                    .avatarUrl("https://images.unsplash.com/photo-1519085360753-af0119f7cbe7")
                     .role(UserRole.ROLE_ORGANIZER)
                     .enabled(true)
                     .build());
@@ -105,6 +108,8 @@ public class DataSeeder implements CommandLineRunner {
                     .email("staff@eventhub.com")
                     .password(passwordEncoder.encode("staff123"))
                     .fullName("Gate Check-in Staff")
+                    .phoneNumber("0923456789")
+                    .avatarUrl("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d")
                     .role(UserRole.ROLE_STAFF)
                     .enabled(true)
                     .build());
@@ -114,6 +119,8 @@ public class DataSeeder implements CommandLineRunner {
                     .email("customer@eventhub.com")
                     .password(passwordEncoder.encode("customer123"))
                     .fullName("Nguyen Van A")
+                    .phoneNumber("0987654321")
+                    .avatarUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb")
                     .role(UserRole.ROLE_CUSTOMER)
                     .enabled(true)
                     .build());

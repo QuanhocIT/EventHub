@@ -218,3 +218,105 @@ Tất cả các API trả về theo cấu trúc chuẩn:
 
 - **Endpoint**: `GET /api/v1/coupons`, `DELETE /api/v1/coupons/{id}`
 - **Quyền**: `ROLE_ADMIN` hoặc `ROLE_ORGANIZER`
+
+---
+
+## 5. User Profile & Admin Management APIs
+
+### 5.1 Xem hồ sơ người dùng hiện tại
+
+- **Endpoint**: `GET /api/v1/users/me`
+- **Quyền**: Yêu cầu xác thực Bearer token (mọi role)
+- **Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "User profile retrieved successfully",
+  "data": {
+    "id": 1,
+    "username": "customer",
+    "email": "customer@eventhub.com",
+    "fullName": "Nguyen Van A",
+    "phoneNumber": "0987654321",
+    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
+    "role": "ROLE_CUSTOMER",
+    "enabled": true,
+    "createdAt": "2026-10-21T09:00:00"
+  }
+}
+```
+
+### 5.2 Cập nhật hồ sơ cá nhân
+
+- **Endpoint**: `PUT /api/v1/users/me`
+- **Quyền**: Yêu cầu xác thực Bearer token (mọi role)
+- **Request Body**:
+
+```json
+{
+  "fullName": "Nguyen Van A Updated",
+  "phoneNumber": "0912345678",
+  "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb"
+}
+```
+
+- **Response**: `200 OK`
+
+### 5.3 Đổi mật khẩu
+
+- **Endpoint**: `PUT /api/v1/users/me/change-password`
+- **Quyền**: Yêu cầu xác thực Bearer token (mọi role)
+- **Request Body**:
+
+```json
+{
+  "currentPassword": "customer123",
+  "newPassword": "NewSecurePassword456!",
+  "confirmPassword": "NewSecurePassword456!"
+}
+```
+
+- **Response**: `200 OK`
+
+### 5.4 Admin: Danh sách người dùng (Tìm kiếm, Lọc & Phân trang)
+
+- **Endpoint**: `GET /api/v1/users`
+- **Quyền**: `ROLE_ADMIN`
+- **Query Parameters**:
+  - `keyword` (String, optional): Tìm kiếm theo username, email, họ tên hoặc SĐT
+  - `role` (Enum, optional): `ROLE_CUSTOMER`, `ROLE_ORGANIZER`, `ROLE_STAFF`, `ROLE_ADMIN`
+  - `enabled` (Boolean, optional): `true` hoặc `false`
+  - `page` (Integer, default 0)
+  - `size` (Integer, default 10)
+  - `sortBy` (String, default "createdAt")
+  - `direction` (String: "asc" / "desc", default "desc")
+- **Response**: `200 OK` (phân trang `PageResponse<UserProfileResponse>`)
+
+### 5.5 Admin: Khóa hoặc Kích hoạt tài khoản
+
+- **Endpoint**: `PATCH /api/v1/users/{id}/status`
+- **Quyền**: `ROLE_ADMIN` (Ngăn chặn Admin tự khóa tài khoản của mình)
+- **Request Body**:
+
+```json
+{
+  "enabled": false
+}
+```
+
+- **Response**: `200 OK`
+
+### 5.6 Admin: Phân quyền vai trò người dùng
+
+- **Endpoint**: `PATCH /api/v1/users/{id}/role`
+- **Quyền**: `ROLE_ADMIN` (Ngăn chặn Admin tự hạ quyền của mình)
+- **Request Body**:
+
+```json
+{
+  "role": "ROLE_ORGANIZER"
+}
+```
+
+- **Response**: `200 OK`
