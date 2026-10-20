@@ -64,4 +64,10 @@ public class EventResponse {
 
     @Schema(example = "technology-conference")
     private String categorySlug;
+
+    @Schema(example = "4.85", description = "Average attendee review rating (0.0 to 5.0)")
+    private Double averageRating;
+
+    @Schema(example = "128", description = "Total number of submitted reviews")
+    private Integer reviewCount;
 }

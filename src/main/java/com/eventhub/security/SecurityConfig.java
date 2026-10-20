@@ -46,6 +46,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+                        // Authenticated attendee review endpoint
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/reviews/my-review").authenticated()
                         // Public event viewing
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
                         // Public venue viewing

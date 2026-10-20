@@ -320,3 +320,85 @@ Tất cả các API trả về theo cấu trúc chuẩn:
 ```
 
 - **Response**: `200 OK`
+
+---
+
+## 6. Review & Rating APIs
+
+### 6.1 Lấy danh sách đánh giá của sự kiện
+
+- **Endpoint**: `GET /api/v1/events/{eventId}/reviews`
+- **Quyền**: Public
+- **Query Parameters**:
+  - `page` (Integer, default 0)
+  - `size` (Integer, default 10)
+- **Response**: `200 OK` (`PageResponse<ReviewResponse>`)
+
+### 6.2 Báo cáo tổng quan xếp hạng & phân bổ số sao
+
+- **Endpoint**: `GET /api/v1/events/{eventId}/reviews/summary`
+- **Quyền**: Public
+- **Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {
+    "eventId": 1,
+    "averageRating": 4.85,
+    "totalReviews": 128,
+    "star5Count": 110,
+    "star4Count": 14,
+    "star3Count": 3,
+    "star2Count": 1,
+    "star1Count": 0
+  }
+}
+```
+
+### 6.3 Lấy đánh giá của chính người dùng hiện tại
+
+- **Endpoint**: `GET /api/v1/events/{eventId}/reviews/my-review`
+- **Quyền**: Authenticated (`ROLE_CUSTOMER`, `ROLE_ORGANIZER`, `ROLE_ADMIN`)
+- **Response**: `200 OK` (Trả về `ReviewResponse` hoặc `null` nếu chưa đánh giá)
+
+### 6.4 Gửi đánh giá sự kiện (Verified Attendee Guard)
+
+- **Endpoint**: `POST /api/v1/events/{eventId}/reviews`
+- **Quyền**: Authenticated
+- **Điều kiện nghiệp vụ**:
+  - Sự kiện đã bắt đầu diễn ra (`startTime <= now`).
+  - Người dùng có đơn hàng xác nhận (`CONFIRMED`) hoặc vé đã check-in (`USED`).
+  - Mỗi người dùng chỉ được đánh giá 1 lần (dùng PUT để sửa).
+- **Request Body**:
+
+```json
+{
+  "rating": 5,
+  "comment": "Sự kiện được chuẩn bị chu đáo, diễn giả chất lượng và hệ thống check-in vé QR mượt mà!"
+}
+```
+
+- **Response**: `201 Created`
+
+### 6.5 Cập nhật đánh giá của mình
+
+- **Endpoint**: `PUT /api/v1/reviews/{reviewId}`
+- **Quyền**: Authenticated (Chỉ tác giả đánh giá)
+- **Request Body**:
+
+```json
+{
+  "rating": 4,
+  "comment": "Bổ sung nhận xét sau khi nhận được tài liệu slide và recording."
+}
+```
+
+- **Response**: `200 OK`
+
+### 6.6 Xóa đánh giá
+
+- **Endpoint**: `DELETE /api/v1/reviews/{reviewId}`
+- **Quyền**: Tác giả đánh giá hoặc `ROLE_ADMIN`
+- **Response**: `200 OK`

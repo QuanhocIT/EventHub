@@ -129,6 +129,25 @@
   - Thay đổi phân quyền vai trò: `PATCH /api/v1/users/{id}/role` (Bảo vệ nghiệp vụ: Ngăn chặn Admin tự hạ quyền của chính mình).
 - [x] Viết Unit Tests toàn diện với 12 test cases cho `UserServiceTest`.
 
+### Phase 14: Module Đánh Giá & Xếp Hạng Sự Kiện (Event Reviews & Ratings) *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `Review` liên kết `Event` và `User` với ràng buộc duy nhất `@UniqueConstraint(name = "uk_reviews_user_event", columnNames = {"user_id", "event_id"})` đảm bảo mỗi người dùng chỉ đánh giá 1 lần cho mỗi sự kiện (có hỗ trợ chỉnh sửa).
+- [x] **Verified Attendee Guard (Bộ lọc kiểm chứng người tham gia thực tế)**:
+  - Chỉ cho phép đánh giá khi sự kiện đã bắt đầu diễn ra (`startTime <= now`).
+  - Kiểm tra điều kiện bắt buộc: Người dùng phải có đơn hàng vé xác nhận (`BookingStatus.CONFIRMED`) hoặc có vé đã check-in qua cổng (`TicketStatus.USED`). Ngăn chặn triệt để review ảo hoặc spam phá hoại uy tín sự kiện.
+- [x] **Dynamic Rating Aggregation & Caching**:
+  - Truy vấn JPQL tính điểm trung bình (`AVG(rating)`) và tổng số đánh giá (`COUNT(rating)`), làm tròn 2 chữ số thập phân (`4.85/5.0`).
+  - Tự động đồng bộ và lưu cache trực tiếp vào trường `averageRating` và `reviewCount` trên Entity `Event` mỗi khi có review mới, sửa hoặc xóa. Tối ưu hiệu năng đọc trang chủ và danh sách sự kiện mà không phải tính lại toàn bảng reviews.
+- [x] Hệ thống API toàn diện:
+  - `GET /api/v1/events/{eventId}/reviews`: Xem danh sách đánh giá của sự kiện (Công khai, phân trang, xếp theo mới nhất).
+  - `GET /api/v1/events/{eventId}/reviews/summary`: Báo cáo xếp hạng tổng quan và phân bổ chi tiết số sao (từ 1 sao đến 5 sao).
+  - `GET /api/v1/events/{eventId}/reviews/my-review`: Lấy đánh giá của chính người dùng hiện tại đối với sự kiện.
+  - `POST /api/v1/events/{eventId}/reviews`: Gửi đánh giá mới (1-5 sao, bình luận tối đa 2000 ký tự).
+  - `PUT /api/v1/reviews/{reviewId}`: Chỉnh sửa đánh giá (chỉ tác giả mới có quyền sửa).
+  - `DELETE /api/v1/reviews/{reviewId}`: Xóa đánh giá (cho phép tác giả hoặc `ROLE_ADMIN`).
+- [x] Tích hợp nạp sẵn dữ liệu mẫu trong `DataSeeder` với verified review demo kèm số sao thực tế.
+- [x] Viết bộ Unit Tests hoàn chỉnh `ReviewServiceTest` với 15 test cases, nâng tổng số kiểm thử toàn dự án lên **109 tests (100% PASS)**.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -143,3 +162,4 @@
 - **Dynamic Queries & Criteria API (Phase 11)**: Tại sao nên dùng Spring Data JPA `Specification` thay cho việc nối chuỗi String query? Cơ chế compile-time type safety và chống SQL Injection.
 - **Promotions & Concurrency Safety (Phase 12)**: Giải quyết bài toán concurrency với mã giảm giá số lượng có hạn; Quản lý vòng đời khuyến mãi và cơ chế bù trừ (compensation transaction) khi đơn hàng hủy.
 - **User Management & Business Safety Guards (Phase 13)**: Thiết kế API đổi mật khẩu an toàn; Kỹ thuật Self-Protection Guards (ngăn chặn Admin tự khóa hoặc tự tước quyền quản trị của chính mình, bảo vệ tính toàn vẹn hệ thống).
+- **Social Proof & Verified Attendee Pattern (Phase 14)**: Cơ chế chống đánh giá ảo (Verified Attendee Guard); Kỹ thuật Denormalization / Summary Caching trên bảng `events` để tối ưu chi phí truy vấn đọc cao (read-heavy) so với chi phí ghi thấp (write-rare) trong bài toán kiến trúc hệ thống lớn.

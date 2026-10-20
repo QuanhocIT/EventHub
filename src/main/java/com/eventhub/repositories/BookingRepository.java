@@ -22,6 +22,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStatusAndExpiresAtBefore(BookingStatus status, LocalDateTime now);
 
+    boolean existsByUserIdAndEventIdAndStatus(Long userId, Long eventId, BookingStatus status);
+
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(b.totalAmount), 0) FROM Booking b WHERE b.event.organizer.id = :organizerId AND b.status = :status")
     java.math.BigDecimal sumTotalAmountByOrganizerIdAndStatus(@org.springframework.data.repository.query.Param("organizerId") Long organizerId, @org.springframework.data.repository.query.Param("status") BookingStatus status);
 

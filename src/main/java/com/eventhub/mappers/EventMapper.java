@@ -63,6 +63,8 @@ public class EventMapper {
                 .categoryId(categoryId)
                 .categoryName(categoryName)
                 .categorySlug(categorySlug)
+                .averageRating(event.getAverageRating() != null ? event.getAverageRating() : 0.0)
+                .reviewCount(event.getReviewCount() != null ? event.getReviewCount() : 0)
                 .build();
     }
 

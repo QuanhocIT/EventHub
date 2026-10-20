@@ -21,12 +21,14 @@ import com.eventhub.enums.PaymentStatus;
 import com.eventhub.enums.SeatZone;
 import com.eventhub.enums.TicketStatus;
 import com.eventhub.enums.UserRole;
+import com.eventhub.entities.Review;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.CategoryRepository;
 import com.eventhub.repositories.CouponRepository;
 import com.eventhub.repositories.EventRepository;
 import com.eventhub.repositories.EventSeatRepository;
 import com.eventhub.repositories.PaymentRepository;
+import com.eventhub.repositories.ReviewRepository;
 import com.eventhub.repositories.SeatRepository;
 import com.eventhub.repositories.TicketRepository;
 import com.eventhub.repositories.TicketTypeRepository;
@@ -63,6 +65,7 @@ public class DataSeeder implements CommandLineRunner {
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final TicketRepository ticketRepository;
+    private final ReviewRepository reviewRepository;
     private final PasswordEncoder passwordEncoder;
     private final QrCodeService qrCodeService;
 
@@ -76,6 +79,7 @@ public class DataSeeder implements CommandLineRunner {
         seedEventsAndTicketTypes();
         seedCoupons();
         seedSampleBookingsAndTickets();
+        seedReviews();
         log.info("Database seeding process completed successfully!");
     }
 
@@ -691,5 +695,35 @@ public class DataSeeder implements CommandLineRunner {
         ticketRepository.save(ticket2);
 
         log.info("Seeded demo confirmed booking, payment and e-tickets (1 VALID, 1 USED for check-in demo)");
+    }
+
+    private void seedReviews() {
+        if (reviewRepository.count() > 0) {
+            log.info("Reviews already seeded, skipping.");
+            return;
+        }
+
+        User customer = userRepository.findByUsername("customer").orElse(null);
+        Event techEvent = eventRepository.findAll().stream()
+                .filter(e -> e.getTitle().contains("Vietnam Tech Summit"))
+                .findFirst()
+                .orElse(null);
+
+        if (customer != null && techEvent != null) {
+            Review review = Review.builder()
+                    .event(techEvent)
+                    .user(customer)
+                    .rating(5)
+                    .comment("Sự kiện quy tụ dàn diễn giả công nghệ hàng đầu, tổ chức rất chuyên nghiệp và công nghệ check-in QR cực nhanh!")
+                    .isVerifiedAttendee(true)
+                    .build();
+            reviewRepository.save(review);
+
+            techEvent.setAverageRating(5.0);
+            techEvent.setReviewCount(1);
+            eventRepository.save(techEvent);
+
+            log.info("Seeded demo verified review for event: {}", techEvent.getTitle());
+        }
     }
 }
