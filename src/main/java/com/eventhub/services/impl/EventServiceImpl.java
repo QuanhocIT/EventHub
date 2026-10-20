@@ -48,6 +48,7 @@ public class EventServiceImpl implements EventService {
     private final VenueRepository venueRepository;
     private final SeatRepository seatRepository;
     private final EventSeatRepository eventSeatRepository;
+    private final com.eventhub.repositories.CategoryRepository categoryRepository;
     private final EventMapper eventMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -65,6 +66,13 @@ public class EventServiceImpl implements EventService {
 
         Event event = eventMapper.toEntity(request);
         event.setOrganizer(organizer);
+
+        if (request.getCategoryId() != null) {
+            com.eventhub.entities.Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
+            event.setCategory(category);
+        }
+
         Event savedEvent = eventRepository.save(event);
 
         // Publish domain event
@@ -84,8 +92,29 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public PageResponse<EventResponse> getAllEvents(String keyword, EventStatus status, Pageable pageable) {
-        log.debug("Searching events - keyword: {}, status: {}, pageable: {}", keyword, status, pageable);
-        Page<Event> page = eventRepository.searchEvents(keyword, status, pageable);
+        return getAllEvents(keyword, null, status, null, null, null, null, null, pageable);
+    }
+
+    @Override
+    public PageResponse<EventResponse> getAllEvents(
+            String keyword,
+            Long categoryId,
+            EventStatus status,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate,
+            String location,
+            Pageable pageable
+    ) {
+        log.debug("Searching events with filters - keyword: {}, categoryId: {}, status: {}, minPrice: {}, maxPrice: {}",
+                keyword, categoryId, status, minPrice, maxPrice);
+
+        org.springframework.data.jpa.domain.Specification<Event> spec =
+                com.eventhub.repositories.specifications.EventSpecification.filter(
+                        keyword, categoryId, status, minPrice, maxPrice, startDate, endDate, location);
+
+        Page<Event> page = eventRepository.findAll(spec, pageable);
         Page<EventResponse> responsePage = page.map(eventMapper::toResponse);
         return PageResponse.from(responsePage);
     }
@@ -108,6 +137,13 @@ public class EventServiceImpl implements EventService {
         }
 
         eventMapper.updateEntityFromRequest(request, event);
+
+        if (request.getCategoryId() != null) {
+            com.eventhub.entities.Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.getCategoryId()));
+            event.setCategory(category);
+        }
+
         Event updatedEvent = eventRepository.save(event);
 
         log.info("Event updated successfully with ID: {}", updatedEvent.getId());

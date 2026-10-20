@@ -42,6 +42,10 @@ public class EventMapper {
                     : event.getOrganizer().getUsername();
         }
 
+        Long categoryId = event.getCategory() != null ? event.getCategory().getId() : null;
+        String categoryName = event.getCategory() != null ? event.getCategory().getName() : null;
+        String categorySlug = event.getCategory() != null ? event.getCategory().getSlug() : null;
+
         return EventResponse.builder()
                 .id(event.getId())
                 .title(event.getTitle())
@@ -56,6 +60,9 @@ public class EventMapper {
                 .updatedAt(event.getUpdatedAt())
                 .organizerId(organizerId)
                 .organizerName(organizerName)
+                .categoryId(categoryId)
+                .categoryName(categoryName)
+                .categorySlug(categorySlug)
                 .build();
     }
 

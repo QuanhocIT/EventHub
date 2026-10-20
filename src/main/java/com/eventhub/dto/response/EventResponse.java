@@ -55,4 +55,13 @@ public class EventResponse {
 
     @Schema(example = "John Doe")
     private String organizerName;
+
+    @Schema(example = "1")
+    private Long categoryId;
+
+    @Schema(example = "Technology & Conference")
+    private String categoryName;
+
+    @Schema(example = "technology-conference")
+    private String categorySlug;
 }

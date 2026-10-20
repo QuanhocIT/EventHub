@@ -39,13 +39,25 @@ public class EventController {
 
     private final EventService eventService;
 
-    @Operation(summary = "Get list of events (paginated & searchable)", description = "Public endpoint to retrieve events")
+    @Operation(summary = "Get list of events (paginated & searchable with advanced filters)", description = "Public endpoint to retrieve events")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<EventResponse>>> getAllEvents(
-            @Parameter(description = "Keyword to filter by title or location")
+            @Parameter(description = "Keyword to filter by title, description or location")
             @RequestParam(required = false) String keyword,
+            @Parameter(description = "Filter by category ID")
+            @RequestParam(required = false) Long categoryId,
             @Parameter(description = "Filter by event status")
             @RequestParam(required = false) EventStatus status,
+            @Parameter(description = "Filter by minimum ticket price")
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @Parameter(description = "Filter by maximum ticket price")
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @Parameter(description = "Filter events starting on or after (ISO-8601)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+            @Parameter(description = "Filter events ending on or before (ISO-8601)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate,
+            @Parameter(description = "Filter by location (e.g. Hanoi, TP.HCM)")
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -53,7 +65,8 @@ public class EventController {
     ) {
         Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        PageResponse<EventResponse> events = eventService.getAllEvents(keyword, status, pageable);
+        PageResponse<EventResponse> events = eventService.getAllEvents(
+                keyword, categoryId, status, minPrice, maxPrice, startDate, endDate, location, pageable);
         return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", events));
     }
 

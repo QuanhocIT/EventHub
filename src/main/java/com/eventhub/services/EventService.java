@@ -15,6 +15,18 @@ public interface EventService {
 
     PageResponse<EventResponse> getAllEvents(String keyword, EventStatus status, Pageable pageable);
 
+    PageResponse<EventResponse> getAllEvents(
+            String keyword,
+            Long categoryId,
+            EventStatus status,
+            java.math.BigDecimal minPrice,
+            java.math.BigDecimal maxPrice,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate,
+            String location,
+            Pageable pageable
+    );
+
     EventResponse updateEvent(Long id, UpdateEventRequest request, String currentUsername, boolean isAdmin);
 
     void deleteEvent(Long id, String currentUsername, boolean isAdmin);

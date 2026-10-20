@@ -102,6 +102,22 @@
 - [x] Cấu hình JVM Flags tối ưu containerized (`-XX:+UseG1GC`, `-XX:MaxRAMPercentage=75.0`).
 - [x] Đóng gói và kiểm tra toàn diện runnable JAR (`mvnw clean package`).
 
+### Phase 11: Module Category & Bộ Lọc Sự Kiện Nâng Cao (Dynamic Specification) *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `Category` (id, name, slug, description, iconUrl, active) và CRUD API.
+- [x] Liên kết `@ManyToOne` giữa `Event` và `Category`.
+- [x] Xây dựng bộ lọc tìm kiếm đa tiêu chí bằng Spring Data JPA Specification (`EventSpecification`): Lọc theo keyword, danh mục, khoảng giá (`minPrice`, `maxPrice`), khoảng thời gian diễn ra (`startDate`, `endDate`), địa điểm.
+- [x] Hỗ trợ phân trang và sắp xếp động theo tiêu chuẩn Production.
+
+### Phase 12: Module Coupon / Voucher Khuyến Mãi & Hệ Thống Data Seeder *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `Coupon` hỗ trợ 2 hình thức: Giảm theo phần trăm (`PERCENTAGE` kèm trần giảm giá tối đa) và Giảm tiền trực tiếp (`FIXED_AMOUNT`).
+- [x] Cơ chế kiểm soát quota sử dụng, hạn dùng, giá trị đơn tối thiểu và giới hạn sự kiện áp dụng.
+- [x] Sử dụng **Pessimistic Write Lock (`@Lock(LockModeType.PESSIMISTIC_WRITE)`)** khi áp dụng mã giảm giá để loại bỏ hoàn toàn Race Condition khi nhiều khách hàng cùng áp dụng mã ưu đãi số lượng có hạn.
+- [x] Cơ chế hoàn trả lượt dùng (`releaseCouponUsage`) khi đơn hàng bị hủy (`cancelBooking`).
+- [x] Tích hợp tự động vào quy trình đặt vé `Booking` (tính toán `subtotalAmount`, `discountAmount`, `totalAmount`).
+- [x] Xây dựng `DataSeeder` tự động nạp sẵn dữ liệu mẫu thực tế: 5 địa điểm nổi tiếng Việt Nam (Mỹ Đình, NCC, Phú Thọ, Nhà hát Lớn, SECC), 6 danh mục sự kiện, 6 sự kiện phong phú đầy đủ các hạng vé, 3 mã coupon và đơn hàng demo với e-ticket QR Code để Dashboard hiển thị số liệu trực quan ngay khi khởi động.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -113,3 +129,5 @@
 - **Asynchronous & Decoupling (Phase 8)**: Quản lý ThreadPoolTaskExecutor; Xử lý Domain Events với `@Async` và `@EventListener` tách biệt nghiệp vụ chính khỏi thông báo (email/SMS).
 - **Aggregations & Analytics (Phase 9)**: Tối ưu hóa truy vấn tổng hợp báo cáo bằng JPQL/Native SQL với `COALESCE` và index composite, tránh N+1 Query.
 - **Containerization & Production (Phase 10)**: Multi-stage Docker build giảm thiểu image size và tăng tính bảo mật (Non-root user); Cấu hình JVM GC & RAM percentage tối ưu trong môi trường container Kubernetes/Docker.
+- **Dynamic Queries & Criteria API (Phase 11)**: Tại sao nên dùng Spring Data JPA `Specification` thay cho việc nối chuỗi String query? Cơ chế compile-time type safety và chống SQL Injection.
+- **Promotions & Concurrency Safety (Phase 12)**: Giải quyết bài toán concurrency với mã giảm giá số lượng có hạn; Quản lý vòng đời khuyến mãi và cơ chế bù trừ (compensation transaction) khi đơn hàng hủy.

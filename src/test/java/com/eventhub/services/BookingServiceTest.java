@@ -64,6 +64,9 @@ class BookingServiceTest {
     @Mock
     private EventSeatRepository eventSeatRepository;
 
+    @Mock
+    private com.eventhub.services.CouponService couponService;
+
     @InjectMocks
     private BookingServiceImpl bookingService;
 
@@ -300,5 +303,62 @@ class BookingServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getBookingCode()).isEqualTo("EVH-20261021-0003");
+    }
+
+    @Test
+    @DisplayName("Should create booking with valid coupon and apply discount")
+    void createBooking_WithCoupon_AppliesDiscount() {
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .eventId(10L)
+                .couponCode("SAVE100K")
+                .items(List.of(
+                        BookingItemRequest.builder()
+                                .ticketTypeId(20L)
+                                .quantity(2)
+                                .build()
+                ))
+                .build();
+
+        when(userRepository.findByUsername("john_customer")).thenReturn(Optional.of(customer));
+        when(eventRepository.findById(10L)).thenReturn(Optional.of(publishedEvent));
+        when(ticketTypeRepository.findByIdAndEventIdWithLock(20L, 10L)).thenReturn(Optional.of(ticketType));
+        when(couponService.applyCouponAndIncrementUsage("SAVE100K", 10L, new BigDecimal("1500000")))
+                .thenReturn(new BigDecimal("100000"));
+        when(bookingRepository.findByBookingCode(any())).thenReturn(Optional.empty());
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> {
+            Booking b = inv.getArgument(0);
+            b.setId(101L);
+            return b;
+        });
+
+        BookingResponse response = bookingService.createBooking(request, "john_customer");
+
+        assertThat(response).isNotNull();
+        // Subtotal = 1,500,000, discount = 100,000, total = 1,400,000
+        assertThat(response.getSubtotalAmount()).isEqualByComparingTo(new BigDecimal("1500000"));
+        assertThat(response.getDiscountAmount()).isEqualByComparingTo(new BigDecimal("100000"));
+        assertThat(response.getTotalAmount()).isEqualByComparingTo(new BigDecimal("1400000"));
+        assertThat(response.getCouponCode()).isEqualTo("SAVE100K");
+    }
+
+    @Test
+    @DisplayName("Should release coupon when booking with coupon is cancelled")
+    void cancelBooking_WithCoupon_ReleasesCoupon() {
+        Booking booking = Booking.builder()
+                .id(1L)
+                .bookingCode("EVH-20261021-COUPON")
+                .user(customer)
+                .event(publishedEvent)
+                .status(BookingStatus.PENDING_PAYMENT)
+                .totalAmount(new BigDecimal("900000"))
+                .couponCode("SAVE100K")
+                .build();
+
+        when(bookingRepository.findByBookingCode("EVH-20261021-COUPON")).thenReturn(Optional.of(booking));
+
+        bookingService.cancelBooking("EVH-20261021-COUPON", "john_customer", false);
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        verify(couponService).releaseCouponUsage("SAVE100K");
     }
 }

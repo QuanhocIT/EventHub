@@ -63,6 +63,9 @@ class EventServiceTest {
     private EventSeatRepository eventSeatRepository;
 
     @Mock
+    private com.eventhub.repositories.CategoryRepository categoryRepository;
+
+    @Mock
     private EventMapper eventMapper;
 
     @Mock
@@ -214,7 +217,7 @@ class EventServiceTest {
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("You do not have permission to delete this event");
 
-        verify(eventRepository, never()).delete(any());
+        verify(eventRepository, never()).delete(any(Event.class));
     }
 
     @Test

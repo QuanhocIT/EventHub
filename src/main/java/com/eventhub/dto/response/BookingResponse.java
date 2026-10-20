@@ -24,6 +24,9 @@ public class BookingResponse {
     private String eventTitle;
     private String username;
     private BookingStatus status;
+    private BigDecimal subtotalAmount;
+    private BigDecimal discountAmount;
+    private String couponCode;
     private BigDecimal totalAmount;
     private LocalDateTime expiresAt;
     private List<BookingItemResponse> items;

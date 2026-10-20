@@ -54,4 +54,7 @@ public class CreateEventRequest {
 
     @Schema(example = "PUBLISHED", description = "Initial status (defaults to DRAFT if null)")
     private EventStatus status;
+
+    @Schema(example = "1", description = "ID of the category")
+    private Long categoryId;
 }

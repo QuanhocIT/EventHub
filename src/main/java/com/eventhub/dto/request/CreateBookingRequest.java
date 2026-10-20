@@ -24,4 +24,6 @@ public class CreateBookingRequest {
     @NotEmpty(message = "Booking items must not be empty")
     @Valid
     private List<BookingItemRequest> items;
+
+    private String couponCode;
 }

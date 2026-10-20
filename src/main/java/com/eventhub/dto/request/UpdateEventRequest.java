@@ -52,4 +52,7 @@ public class UpdateEventRequest {
 
     @Schema(example = "PUBLISHED")
     private EventStatus status;
+
+    @Schema(example = "1", description = "ID of the category")
+    private Long categoryId;
 }

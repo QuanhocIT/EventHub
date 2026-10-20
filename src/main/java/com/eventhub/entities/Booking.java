@@ -59,6 +59,17 @@ public class Booking extends BaseEntity {
     @Builder.Default
     private BookingStatus status = BookingStatus.PENDING_PAYMENT;
 
+    @Column(name = "subtotal_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal subtotalAmount = BigDecimal.ZERO;
+
+    @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "coupon_code", length = 30)
+    private String couponCode;
+
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;

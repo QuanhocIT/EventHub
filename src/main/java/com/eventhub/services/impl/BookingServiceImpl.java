@@ -46,6 +46,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final TicketTypeRepository ticketTypeRepository;
     private final EventSeatRepository eventSeatRepository;
+    private final com.eventhub.services.CouponService couponService;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -157,7 +158,18 @@ public class BookingServiceImpl implements BookingService {
             booking.addItem(item);
         }
 
-        booking.setTotalAmount(runningTotal);
+        booking.setSubtotalAmount(runningTotal);
+        if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
+            BigDecimal discount = couponService.applyCouponAndIncrementUsage(request.getCouponCode(), event.getId(), runningTotal);
+            booking.setCouponCode(request.getCouponCode().trim().toUpperCase());
+            booking.setDiscountAmount(discount);
+            BigDecimal finalAmount = runningTotal.subtract(discount);
+            booking.setTotalAmount(finalAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : finalAmount);
+        } else {
+            booking.setDiscountAmount(BigDecimal.ZERO);
+            booking.setTotalAmount(runningTotal);
+        }
+
         Booking saved = bookingRepository.save(booking);
 
         log.info("Booking created successfully with code: {} and total: {}", saved.getBookingCode(), saved.getTotalAmount());
@@ -219,6 +231,11 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        // Release coupon if used
+        if (booking.getCouponCode() != null && !booking.getCouponCode().isBlank()) {
+            couponService.releaseCouponUsage(booking.getCouponCode());
+        }
+
         log.info("Booking {} cancelled and inventory released", bookingCode);
         return mapToResponse(booking);
     }
@@ -264,6 +281,9 @@ public class BookingServiceImpl implements BookingService {
                 .eventTitle(booking.getEvent().getTitle())
                 .username(booking.getUser().getUsername())
                 .status(booking.getStatus())
+                .subtotalAmount(booking.getSubtotalAmount() != null ? booking.getSubtotalAmount() : booking.getTotalAmount())
+                .discountAmount(booking.getDiscountAmount() != null ? booking.getDiscountAmount() : BigDecimal.ZERO)
+                .couponCode(booking.getCouponCode())
                 .totalAmount(booking.getTotalAmount())
                 .expiresAt(booking.getExpiresAt())
                 .items(itemResponses)
