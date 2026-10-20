@@ -104,4 +104,28 @@ public class EventController {
         eventService.deleteEvent(id, currentUsername, isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Event deleted successfully", null));
     }
+
+    @Operation(summary = "Get seating map with status for a specific event", description = "Public endpoint")
+    @GetMapping("/{id}/seats")
+    public ResponseEntity<ApiResponse<java.util.List<com.eventhub.dto.response.EventSeatResponse>>> getEventSeats(@PathVariable Long id) {
+        java.util.List<com.eventhub.dto.response.EventSeatResponse> seats = eventService.getEventSeats(id);
+        return ResponseEntity.ok(ApiResponse.success("Seating map retrieved successfully", seats));
+    }
+
+    @Operation(summary = "Assign a venue to an event and generate event seats", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
+    @PostMapping("/{id}/assign-venue")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<java.util.List<com.eventhub.dto.response.EventSeatResponse>>> assignVenue(
+            @PathVariable Long id,
+            @RequestParam Long venueId,
+            @RequestParam(required = false) java.math.BigDecimal basePrice,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        java.util.List<com.eventhub.dto.response.EventSeatResponse> seats =
+                eventService.assignVenueToEvent(id, venueId, basePrice, currentUsername, isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Venue assigned and seats generated successfully", seats));
+    }
 }

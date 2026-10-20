@@ -49,6 +49,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // Public event viewing
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
+                        // Public venue viewing
+                        .requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

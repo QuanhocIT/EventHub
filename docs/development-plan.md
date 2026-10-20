@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đang thực hiện **Phase 2: Authentication & Authorization (RBAC + Ownership)**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (11/11 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 3: Module Venue & Seat Map**. Đang chuẩn bị **Phase 4: Module TicketType & Booking Cơ Bản**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (24/24 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -16,12 +16,14 @@
 ## 🗺️ Lộ Trình Triển Khai 10 Giai Đoạn (Theo Spec Mục 18)
 
 ### Phase 0: Java & Spring Boot Foundation *(Đã hoàn thành)*
+
 - [x] Thiết lập dự án Spring Boot 3.3.4, Java 21 LTS, Maven Wrapper.
 - [x] Cấu hình Docker Compose cho MySQL.
 - [x] Xây dựng cấu trúc package chuẩn Layered Architecture.
 - [x] Xây dựng `BaseEntity`, `ApiResponse<T>`, `PageResponse<T>`, `GlobalExceptionHandler`.
 
 ### Phase 1: Database & Event Management *(Đã hoàn thành)*
+
 - [x] Thiết kế Entity `Event`, ánh xạ JPA với bảng `events`.
 - [x] Tạo liên kết `@ManyToOne` giữa `Event` và `User` (`organizer_id`).
 - [x] CRUD Event API: Tìm kiếm, lọc theo status, phân trang, lấy chi tiết, tạo, cập nhật, xóa.
@@ -29,6 +31,7 @@
 - [x] Domain Event `EventCreatedEvent` + `EventNotificationListener`.
 
 ### Phase 2: Authentication & Authorization (RBAC + Ownership) *(Đã hoàn thành)*
+
 - [x] Chuẩn hóa enum `UserRole`: `ROLE_CUSTOMER`, `ROLE_ORGANIZER`, `ROLE_STAFF`, `ROLE_ADMIN`.
 - [x] Cấu hình hạt nhân xác thực Spring Security 6 + JWT Stateless.
 - [x] Seed tài khoản mẫu cho 4 vai trò để sẵn sàng kiểm thử (`customer`, `organizer`, `staff`, `admin`).
@@ -39,49 +42,59 @@
 - [x] Kiểm tra quyền sở hữu (Ownership Check): Chỉ người tạo sự kiện hoặc Admin mới có quyền cập nhật (`PUT`) hoặc xóa (`DELETE`) sự kiện.
 - [x] Viết Unit & Integration Test kiểm thử các kịch bản 403 Forbidden.
 
-### Phase 3: Module Venue & Seat Map (Địa Điểm & Ghế)
-- [ ] Thiết kế Entity `Venue` (id, name, address, capacity).
-- [ ] Thiết kế Entity `Seat` (id, venue_id, row, number, zone: VIP, Standard, Balcony,...).
-- [ ] Thiết kế Entity `EventSeat` (id, event_id, seat_id, status: `AVAILABLE`, `HELD`, `SOLD`, `BLOCKED`, price).
-- [ ] CRUD Venue và khởi tạo sơ đồ ghế tự động cho địa điểm.
-- [ ] API lấy sơ đồ ghế theo từng sự kiện (`GET /api/v1/events/{id}/seats`).
+### Phase 3: Module Venue & Seat Map (Địa Điểm & Ghế) *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `Venue` (id, name, address, capacity).
+- [x] Thiết kế Entity `Seat` (id, venue_id, row, number, zone: VIP, Standard, Balcony,...).
+- [x] Thiết kế Entity `EventSeat` (id, event_id, seat_id, status: `AVAILABLE`, `HELD`, `SOLD`, `BLOCKED`, price).
+- [x] CRUD Venue và khởi tạo sơ đồ ghế tự động cho địa điểm.
+- [x] Gán địa điểm cho sự kiện và sinh bản sao `EventSeat`.
+- [x] API lấy sơ đồ ghế theo từng sự kiện (`GET /api/v1/events/{id}/seats`).
 
 ### Phase 4: Module TicketType & Booking Cơ Bản
+
 - [ ] Thiết kế Entity `TicketType` (Early Bird, Standard, VIP,... có giá và số lượng).
 - [ ] Thiết kế Entity `Booking` và `BookingItem` với mã đơn dạng `EVH-YYYYMMDD-XXXX`.
 - [ ] API tạo Booking với validation nghiệp vụ và transaction toàn vẹn.
 
 ### Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)
+
 - [ ] Tích hợp Redis vào dự án (`spring-boot-starter-data-redis`).
 - [ ] Cơ chế Temporary Seat Hold với Redis TTL (5 phút): `seat_hold:{eventId}:{seatId}:{userId}`.
 - [ ] Xử lý Race Condition / Overselling bằng **Pessimistic Locking** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) tại tầng Database.
 - [ ] Cơ chế tự động giải phóng ghế khi hết thời gian giữ chỗ mà không thanh toán.
 
 ### Phase 6: Module Payment & Xử Lý Idempotency
+
 - [ ] Thiết kế Entity `Payment` (booking_id, provider, transaction_code, amount, status).
 - [ ] Flow thanh toán sandbox giả lập.
 - [ ] Xử lý callback/webhook idempotent (ngăn chặn duplicate payment khi client retry).
 
 ### Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in
+
 - [ ] Thiết kế Entity `Ticket` liên kết với `BookingItem`.
 - [ ] Thư viện sinh mã QR (ZXing) chứa token vé an toàn.
 - [ ] API soát vé Check-in cho `ROLE_STAFF` tại cổng sự kiện: Chuyển trạng thái vé sang `USED`, từ chối check-in lần 2.
 
 ### Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)
+
 - [ ] Thông báo qua Email khi đặt vé thành công kèm mã QR Code.
 - [ ] Thông báo khi sự kiện thay đổi lịch hoặc bị hủy.
 
 ### Phase 9: Dashboard Thống Kê & Báo Cáo Doanh Thu
+
 - [ ] Organizer Dashboard: Doanh thu theo thời gian, số vé đã bán, tỷ lệ lấp đầy ghế.
 - [ ] Admin Dashboard: Toàn cảnh người dùng, số lượng sự kiện, tổng giao dịch.
 
 ### Phase 10: Docker & Triển Khai Hoàn Thiện
+
 - [ ] Docker Compose chạy đa dịch vụ: Spring Boot App + MySQL 8.4 + Redis 7.
 - [ ] Cấu hình biến môi trường production, tối ưu connection pool HikariCP.
 
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
+
 - **Security**: Phân biệt Role vs Authority; Cách thiết kế Custom Ownership Check trong Spring Security; Ngăn chặn lỗ hổng IDOR.
 - **Concurrency**: Bản chất của Race Condition khi 2 người cùng click đặt 1 ghế; Pessimistic Locking vs Optimistic Locking; Distributed Lock với Redis Redisson.
 - **Idempotency**: Tại sao API thanh toán phải idempotent? Cơ chế Idempotency Key.

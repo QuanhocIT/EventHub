@@ -21,6 +21,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.eventhub.dto.response.EventSeatResponse;
+import com.eventhub.entities.EventSeat;
+import com.eventhub.entities.Seat;
+import com.eventhub.entities.Venue;
+import com.eventhub.enums.EventSeatStatus;
+import com.eventhub.enums.SeatZone;
+import com.eventhub.repositories.EventSeatRepository;
+import com.eventhub.repositories.SeatRepository;
+import com.eventhub.repositories.VenueRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -43,6 +52,15 @@ class EventServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private VenueRepository venueRepository;
+
+    @Mock
+    private SeatRepository seatRepository;
+
+    @Mock
+    private EventSeatRepository eventSeatRepository;
 
     @Mock
     private EventMapper eventMapper;
@@ -249,5 +267,45 @@ class EventServiceTest {
                 .hasMessageContaining("You do not have permission to modify this event");
 
         verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return event seats successfully")
+    void getEventSeats_Success() {
+        Seat seat1 = Seat.builder().id(10L).seatRow("A").seatNumber(1).zone(SeatZone.VIP).build();
+        EventSeat eventSeat = EventSeat.builder()
+                .id(100L)
+                .event(sampleEvent)
+                .seat(seat1)
+                .status(EventSeatStatus.AVAILABLE)
+                .price(BigDecimal.valueOf(150))
+                .build();
+
+        when(eventRepository.existsById(1L)).thenReturn(true);
+        when(eventSeatRepository.findByEventIdOrderBySeatSeatRowAscSeatSeatNumberAsc(1L)).thenReturn(java.util.List.of(eventSeat));
+
+        java.util.List<EventSeatResponse> seats = eventService.getEventSeats(1L);
+
+        assertThat(seats).hasSize(1);
+        assertThat(seats.get(0).getSeatRow()).isEqualTo("A");
+        assertThat(seats.get(0).getZone()).isEqualTo(SeatZone.VIP);
+    }
+
+    @Test
+    @DisplayName("Should assign venue and generate event seats successfully")
+    void assignVenueToEvent_Success() {
+        Venue venue = Venue.builder().id(5L).name("City Hall").address("Center Street").build();
+        Seat seat = Seat.builder().id(20L).seatRow("A").seatNumber(1).zone(SeatZone.STANDARD).build();
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
+        when(venueRepository.findById(5L)).thenReturn(Optional.of(venue));
+        when(seatRepository.findByVenueIdOrderBySeatRowAscSeatNumberAsc(5L)).thenReturn(java.util.List.of(seat));
+        when(eventSeatRepository.findByEventIdOrderBySeatSeatRowAscSeatSeatNumberAsc(1L)).thenReturn(java.util.Collections.emptyList());
+        when(eventRepository.existsById(1L)).thenReturn(true);
+
+        eventService.assignVenueToEvent(1L, 5L, BigDecimal.valueOf(100), "john_doe", false);
+
+        verify(eventSeatRepository).saveAll(any());
+        verify(eventRepository).save(sampleEvent);
     }
 }

@@ -18,4 +18,14 @@ public interface EventService {
     EventResponse updateEvent(Long id, UpdateEventRequest request, String currentUsername, boolean isAdmin);
 
     void deleteEvent(Long id, String currentUsername, boolean isAdmin);
+
+    java.util.List<com.eventhub.dto.response.EventSeatResponse> getEventSeats(Long eventId);
+
+    java.util.List<com.eventhub.dto.response.EventSeatResponse> assignVenueToEvent(
+            Long eventId,
+            Long venueId,
+            java.math.BigDecimal basePrice,
+            String currentUsername,
+            boolean isAdmin
+    );
 }
