@@ -59,6 +59,9 @@ class PaymentServiceTest {
     @Mock
     private com.eventhub.services.TicketService ticketService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
@@ -203,6 +206,8 @@ class PaymentServiceTest {
         assertThat(pendingBooking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
         assertThat(eventSeat.getStatus()).isEqualTo(EventSeatStatus.SOLD);
         verify(redisTemplate).delete("seat_hold:10:50");
+        verify(ticketService).generateTicketsForBooking(pendingBooking);
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test

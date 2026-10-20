@@ -16,10 +16,13 @@ import com.eventhub.exceptions.ForbiddenException;
 import com.eventhub.exceptions.ResourceNotFoundException;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.PaymentRepository;
+import com.eventhub.events.BookingConfirmedEvent;
 import com.eventhub.services.PaymentService;
+import com.eventhub.services.TicketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +41,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
-    private final com.eventhub.services.TicketService ticketService;
+    private final TicketService ticketService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -140,6 +144,16 @@ public class PaymentServiceImpl implements PaymentService {
 
             // Issue e-tickets
             ticketService.generateTicketsForBooking(booking);
+
+            // Broadcast domain event to trigger asynchronous email notifications
+            eventPublisher.publishEvent(BookingConfirmedEvent.builder()
+                    .bookingId(booking.getId())
+                    .bookingCode(booking.getBookingCode())
+                    .attendeeEmail(booking.getUser().getEmail())
+                    .attendeeName(booking.getUser().getFullName())
+                    .eventTitle(booking.getEvent().getTitle())
+                    .totalAmount(booking.getTotalAmount())
+                    .build());
 
             log.info("Payment {} SUCCESS. Booking {} CONFIRMED, seats marked SOLD, and e-tickets issued.",
                     payment.getTransactionCode(), booking.getBookingCode());

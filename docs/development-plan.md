@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đã hoàn thành **Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in**. Đang chuẩn bị **Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (56/56 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)**. Đang tiến hành **Phase 9: Dashboard Thống Kê & Báo Cáo Doanh Thu**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (59/59 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -82,10 +82,11 @@
 - [x] API xem vé của người dùng (`GET /api/v1/tickets/my`) kèm hình ảnh mã QR.
 - [x] API soát vé Check-in tại cổng (`POST /api/v1/tickets/{ticketCode}/check-in`) cho `ROLE_STAFF`: Chuyển trạng thái vé sang `USED`, ghi nhận thời gian & nhân viên, từ chối check-in lần 2 (Anti-passback).
 
-### Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async)
+### Phase 8: Notification & Xử Lý Bất Đồng Bộ (@Async) *(Đã hoàn thành)*
 
-- [ ] Thông báo qua Email khi đặt vé thành công kèm mã QR Code.
-- [ ] Thông báo khi sự kiện thay đổi lịch hoặc bị hủy.
+- [x] Cấu hình Spring Boot `@EnableAsync` với ThreadPoolTaskExecutor chuyên dụng (`AsyncConfig`).
+- [x] Dịch vụ `EmailService` gửi email xác nhận đặt vé và thông báo hủy sự kiện bất đồng bộ.
+- [x] Kiến trúc Domain Event: Bắn `BookingConfirmedEvent` và lắng nghe qua `BookingNotificationListener`.
 
 ### Phase 9: Dashboard Thống Kê & Báo Cáo Doanh Thu
 
