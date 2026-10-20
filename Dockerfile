@@ -16,7 +16,8 @@ USER appuser
 COPY --from=build /app/target/*.jar app.jar
 
 ENV SPRING_PROFILES_ACTIVE=prod \
-    SERVER_PORT=8080
+    SERVER_PORT=8088 \
+    JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 
-EXPOSE 8080
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+EXPOSE 8088
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

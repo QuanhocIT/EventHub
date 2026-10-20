@@ -94,15 +94,22 @@
 - [x] Admin Dashboard: Toàn cảnh người dùng theo vai trò (Customer, Organizer, Staff), số lượng sự kiện, tổng giao dịch & doanh thu toàn sàn (`GET /api/v1/dashboard/admin`).
 - [x] Tối ưu JPQL Aggregation queries với `COALESCE(SUM(...), 0)` tránh trả về NULL và kiểm soát quyền truy cập chi tiết.
 
-### Phase 10: Docker & Triển Khai Hoàn Thiện
+### Phase 10: Docker & Triển Khai Hoàn Thiện *(Đã hoàn thành)*
 
-- [ ] Docker Compose chạy đa dịch vụ: Spring Boot App + MySQL 8.4 + Redis 7.
-- [ ] Cấu hình biến môi trường production, tối ưu connection pool HikariCP.
+- [x] Docker Compose chạy đa dịch vụ chuẩn Microservice: Spring Boot App + MySQL 8.4 LTS + Redis 7 Alpine (`docker-compose.yml`).
+- [x] Multi-stage build `Dockerfile` tối ưu layer caching và sử dụng Eclipse Temurin Java 21 Alpine JRE với non-root user.
+- [x] Cấu hình cấu hình `application-prod.yml` tối ưu HikariCP Connection Pool (20 max pool size, timeout 20s).
+- [x] Cấu hình JVM Flags tối ưu containerized (`-XX:+UseG1GC`, `-XX:MaxRAMPercentage=75.0`).
+- [x] Đóng gói và kiểm tra toàn diện runnable JAR (`mvnw clean package`).
 
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
 
-- **Security**: Phân biệt Role vs Authority; Cách thiết kế Custom Ownership Check trong Spring Security; Ngăn chặn lỗ hổng IDOR.
-- **Concurrency**: Bản chất của Race Condition khi 2 người cùng click đặt 1 ghế; Pessimistic Locking vs Optimistic Locking; Distributed Lock với Redis Redisson.
-- **Idempotency**: Tại sao API thanh toán phải idempotent? Cơ chế Idempotency Key.
+- **Security (Phase 1-2)**: Phân biệt Role vs Authority; Cách thiết kế Custom Ownership Check trong Spring Security; Ngăn chặn triệt để lỗ hổng IDOR; Stateless Authentication với JWT Access & Refresh Token.
+- **Data Modeling & Concurrency (Phase 3-5)**: Bản chất của Race Condition khi 2 người cùng click đặt 1 ghế; Pessimistic Locking (`@Lock(PESSIMISTIC_WRITE)`) vs Optimistic Locking (`@Version`); Distributed Temporary Hold với Redis TTL và cơ chế auto-release scheduler.
+- **Idempotency & Transactions (Phase 6)**: Tại sao API thanh toán và webhook bắt buộc phải Idempotent? Sử dụng Idempotency Key và Database Unique Constraint để chống double-spending khi mạng chập chờn.
+- **QR Code & Gate Check-in (Phase 7)**: Sinh mã QR Code Base64 nhúng bảo mật; Cơ chế Anti-passback kiểm soát vé tại cổng tránh gian lận.
+- **Asynchronous & Decoupling (Phase 8)**: Quản lý ThreadPoolTaskExecutor; Xử lý Domain Events với `@Async` và `@EventListener` tách biệt nghiệp vụ chính khỏi thông báo (email/SMS).
+- **Aggregations & Analytics (Phase 9)**: Tối ưu hóa truy vấn tổng hợp báo cáo bằng JPQL/Native SQL với `COALESCE` và index composite, tránh N+1 Query.
+- **Containerization & Production (Phase 10)**: Multi-stage Docker build giảm thiểu image size và tăng tính bảo mật (Non-root user); Cấu hình JVM GC & RAM percentage tối ưu trong môi trường container Kubernetes/Docker.
