@@ -15,7 +15,7 @@ public interface EventService {
 
     PageResponse<EventResponse> getAllEvents(String keyword, EventStatus status, Pageable pageable);
 
-    EventResponse updateEvent(Long id, UpdateEventRequest request);
+    EventResponse updateEvent(Long id, UpdateEventRequest request, String currentUsername, boolean isAdmin);
 
-    void deleteEvent(Long id);
+    void deleteEvent(Long id, String currentUsername, boolean isAdmin);
 }

@@ -76,11 +76,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventResponse updateEvent(Long id, UpdateEventRequest request) {
-        log.info("Updating event with ID: {}", id);
+    public EventResponse updateEvent(Long id, UpdateEventRequest request, String currentUsername, boolean isAdmin) {
+        log.info("Updating event with ID: {} by user: {} (isAdmin: {})", id, currentUsername, isAdmin);
 
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this event");
+        }
 
         if (request.getEndTime().isBefore(request.getStartTime())) {
             throw new BadRequestException("Event end time cannot be before start time");
@@ -95,10 +100,17 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public void deleteEvent(Long id) {
-        log.info("Deleting event with ID: {}", id);
+    public void deleteEvent(Long id, String currentUsername, boolean isAdmin) {
+        log.info("Deleting event with ID: {} by user: {} (isAdmin: {})", id, currentUsername, isAdmin);
+
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to delete this event");
+        }
+
         eventRepository.delete(event);
         log.info("Event deleted successfully with ID: {}", id);
     }

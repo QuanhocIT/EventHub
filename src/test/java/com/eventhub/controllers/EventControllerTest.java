@@ -123,6 +123,55 @@ class EventControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "customer", roles = {"CUSTOMER"})
+    @DisplayName("POST /api/v1/events with CUSTOMER role returns 403 Forbidden")
+    void createEvent_CustomerRole_Returns403() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        CreateEventRequest request = CreateEventRequest.builder()
+                .title("Unauthorized Event")
+                .startTime(now.plusDays(1))
+                .endTime(now.plusDays(2))
+                .capacity(100)
+                .build();
+
+        mockMvc.perform(post("/api/v1/events")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @DisplayName("POST /api/v1/events with ORGANIZER role returns 201 Created")
+    void createEvent_OrganizerRole_Returns201() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        CreateEventRequest request = CreateEventRequest.builder()
+                .title("Organizer Event")
+                .startTime(now.plusDays(1))
+                .endTime(now.plusDays(2))
+                .capacity(100)
+                .build();
+
+        EventResponse response = EventResponse.builder()
+                .id(20L)
+                .title("Organizer Event")
+                .status(EventStatus.PUBLISHED)
+                .build();
+
+        when(eventService.createEvent(any(CreateEventRequest.class), any(String.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/events")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(20));
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     @DisplayName("POST /api/v1/events with invalid payload returns 400 Bad Request")
     void createEvent_InvalidPayload_Returns400() throws Exception {

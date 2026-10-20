@@ -18,6 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.eventhub.enums.UserRole;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,8 +64,9 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.success(event));
     }
 
-    @Operation(summary = "Create a new event", description = "Requires authentication", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Create a new event", description = "Requires ORGANIZER or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
     @PostMapping
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<EventResponse>> createEvent(
             @Valid @RequestBody CreateEventRequest request,
             java.security.Principal principal
@@ -72,20 +76,32 @@ public class EventController {
                 .body(ApiResponse.success("Event created successfully", createdEvent));
     }
 
-    @Operation(summary = "Update an existing event", description = "Requires authentication", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Update an existing event", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<EventResponse>> updateEvent(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateEventRequest request
+            @Valid @RequestBody UpdateEventRequest request,
+            Authentication authentication
     ) {
-        EventResponse updatedEvent = eventService.updateEvent(id, request);
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        EventResponse updatedEvent = eventService.updateEvent(id, request, currentUsername, isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Event updated successfully", updatedEvent));
     }
 
-    @Operation(summary = "Delete an event by ID", description = "Requires authentication", security = @SecurityRequirement(name = "BearerAuth"))
+    @Operation(summary = "Delete an event by ID", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteEvent(@PathVariable Long id) {
-        eventService.deleteEvent(id);
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteEvent(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        eventService.deleteEvent(id, currentUsername, isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Event deleted successfully", null));
     }
 }

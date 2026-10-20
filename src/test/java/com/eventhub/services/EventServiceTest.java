@@ -1,6 +1,7 @@
 package com.eventhub.services;
 
 import com.eventhub.dto.request.CreateEventRequest;
+import com.eventhub.dto.request.UpdateEventRequest;
 import com.eventhub.dto.response.EventResponse;
 import com.eventhub.entities.Event;
 import com.eventhub.entities.User;
@@ -21,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -176,12 +178,76 @@ class EventServiceTest {
     }
 
     @Test
-    @DisplayName("Should delete event successfully when event exists")
-    void deleteEvent_Success() {
+    @DisplayName("Should delete event successfully when current user is owner")
+    void deleteEvent_Owner_Success() {
         when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
 
-        eventService.deleteEvent(1L);
+        eventService.deleteEvent(1L, "john_doe", false);
 
         verify(eventRepository).delete(sampleEvent);
+    }
+
+    @Test
+    @DisplayName("Should throw AccessDeniedException when deleting event of another organizer")
+    void deleteEvent_NonOwner_ThrowsAccessDeniedException() {
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
+
+        assertThatThrownBy(() -> eventService.deleteEvent(1L, "other_user", false))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("You do not have permission to delete this event");
+
+        verify(eventRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should allow admin to delete any event even if not owner")
+    void deleteEvent_Admin_Success() {
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
+
+        eventService.deleteEvent(1L, "admin_user", true);
+
+        verify(eventRepository).delete(sampleEvent);
+    }
+
+    @Test
+    @DisplayName("Should update event successfully when current user is owner")
+    void updateEvent_Owner_Success() {
+        LocalDateTime now = LocalDateTime.now();
+        UpdateEventRequest updateRequest = UpdateEventRequest.builder()
+                .title("Updated Title")
+                .description("Updated Description")
+                .location("Danang, Vietnam")
+                .startTime(now.plusDays(3))
+                .endTime(now.plusDays(4))
+                .capacity(600)
+                .price(BigDecimal.valueOf(75))
+                .status(EventStatus.PUBLISHED)
+                .build();
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
+        when(eventRepository.save(sampleEvent)).thenReturn(sampleEvent);
+        when(eventMapper.toResponse(sampleEvent)).thenReturn(sampleResponse);
+
+        EventResponse response = eventService.updateEvent(1L, updateRequest, "john_doe", false);
+
+        assertThat(response).isNotNull();
+        verify(eventMapper).updateEntityFromRequest(updateRequest, sampleEvent);
+        verify(eventRepository).save(sampleEvent);
+    }
+
+    @Test
+    @DisplayName("Should throw AccessDeniedException when non-owner updates event")
+    void updateEvent_NonOwner_ThrowsAccessDeniedException() {
+        UpdateEventRequest updateRequest = UpdateEventRequest.builder()
+                .title("Hacked Title")
+                .build();
+
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(sampleEvent));
+
+        assertThatThrownBy(() -> eventService.updateEvent(1L, updateRequest, "hacker_user", false))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("You do not have permission to modify this event");
+
+        verify(eventRepository, never()).save(any());
     }
 }

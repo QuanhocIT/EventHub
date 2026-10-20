@@ -48,7 +48,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
-                .role(UserRole.ROLE_USER)
+                .role(UserRole.ROLE_CUSTOMER)
                 .enabled(true)
                 .build();
 
@@ -92,13 +92,13 @@ public class AuthService {
     }
 
     /**
-     * Seeds initial admin and demo user if no users exist.
+     * Seeds initial demo users for all 4 roles if no users exist.
      */
     @PostConstruct
     @Transactional
     public void seedInitialUsers() {
         if (userRepository.count() == 0) {
-            log.info("Seeding default demo users (admin, user)...");
+            log.info("Seeding default demo users for 4 roles: admin, organizer, staff, customer...");
 
             User admin = User.builder()
                     .username("admin")
@@ -109,19 +109,39 @@ public class AuthService {
                     .enabled(true)
                     .build();
 
-            User user = User.builder()
-                    .username("user")
-                    .email("user@eventhub.com")
-                    .password(passwordEncoder.encode("user123"))
-                    .fullName("Regular User")
-                    .role(UserRole.ROLE_USER)
+            User organizer = User.builder()
+                    .username("organizer")
+                    .email("organizer@eventhub.com")
+                    .password(passwordEncoder.encode("organizer123"))
+                    .fullName("Event Organizer")
+                    .role(UserRole.ROLE_ORGANIZER)
+                    .enabled(true)
+                    .build();
+
+            User staff = User.builder()
+                    .username("staff")
+                    .email("staff@eventhub.com")
+                    .password(passwordEncoder.encode("staff123"))
+                    .fullName("Event Check-in Staff")
+                    .role(UserRole.ROLE_STAFF)
+                    .enabled(true)
+                    .build();
+
+            User customer = User.builder()
+                    .username("customer")
+                    .email("customer@eventhub.com")
+                    .password(passwordEncoder.encode("customer123"))
+                    .fullName("Regular Customer")
+                    .role(UserRole.ROLE_CUSTOMER)
                     .enabled(true)
                     .build();
 
             userRepository.save(admin);
-            userRepository.save(user);
+            userRepository.save(organizer);
+            userRepository.save(staff);
+            userRepository.save(customer);
 
-            log.info("Default users seeded: 'admin' (password: admin123) and 'user' (password: user123)");
+            log.info("Default users seeded: admin, organizer, staff, customer (passwords: <username>123)");
         }
     }
 }
