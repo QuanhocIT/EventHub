@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đã hoàn thành **Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)**. Đang chuẩn bị **Phase 6: Module Payment & Xử Lý Idempotency**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (42/42 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 6: Module Payment & Xử Lý Idempotency**. Đang chuẩn bị **Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (49/49 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -67,11 +67,12 @@
 - [x] Xử lý Race Condition / Overselling bằng **Pessimistic Locking** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) tại tầng Database.
 - [x] Tác vụ định kỳ `@Scheduled` tự động giải phóng ghế và hoàn trả tồn kho vé khi đơn hàng quá hạn thanh toán (`BookingCleanupJob`).
 
-### Phase 6: Module Payment & Xử Lý Idempotency
+### Phase 6: Module Payment & Xử Lý Idempotency *(Đã hoàn thành)*
 
-- [ ] Thiết kế Entity `Payment` (booking_id, provider, transaction_code, amount, status).
-- [ ] Flow thanh toán sandbox giả lập.
-- [ ] Xử lý callback/webhook idempotent (ngăn chặn duplicate payment khi client retry).
+- [x] Thiết kế Entity `Payment` (booking_id, provider, transaction_code, amount, status: `PENDING`, `SUCCESS`, `FAILED`, idempotency_key).
+- [x] Flow thanh toán sandbox giả lập (`POST /api/v1/payments/create`, `POST /api/v1/payments/process-sandbox`).
+- [x] Xử lý callback/webhook idempotent với `Idempotency-Key` (ngăn chặn duplicate payment khi client retry hoặc network lag).
+- [x] Tự động xác nhận `Booking` sang `CONFIRMED`, chuyển ghế sang `SOLD` và dọn dẹp Redis hold khi thanh toán thành công.
 
 ### Phase 7: Phát Hành Vé Điện Tử (Ticket QR Code) & Check-in
 
