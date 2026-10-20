@@ -33,7 +33,8 @@ EventHub/
 │       └── init.sql                 # Script khởi tạo database MySQL
 ├── docs/
 │   ├── architecture.md              # Tài liệu phân tích kiến trúc chi tiết
-│   └── api-spec.md                  # Đặc tả danh sách API và payload mẫu
+│   ├── api-spec.md                  # Đặc tả danh sách API và payload mẫu
+│   └── development-plan.md          # Kế hoạch & lộ trình phát triển tính năng chi tiết
 ├── src/
 │   ├── main/
 │   │   ├── java/com/eventhub/
