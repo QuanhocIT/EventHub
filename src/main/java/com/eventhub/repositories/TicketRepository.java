@@ -20,4 +20,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Page<Ticket> findByBookingUserId(Long userId, Pageable pageable);
 
     long countByEventIdAndStatus(Long eventId, TicketStatus status);
+
+    long countByEventId(Long eventId);
+
+    long countByEventOrganizerId(Long organizerId);
+
+    long countByEventOrganizerIdAndStatus(Long organizerId, TicketStatus status);
+
+    long countByStatus(TicketStatus status);
 }

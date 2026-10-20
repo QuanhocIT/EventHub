@@ -23,6 +23,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     long countByStatus(EventStatus status);
 
+    long countByOrganizerId(Long organizerId);
+
+    long countByOrganizerIdAndStatus(Long organizerId, EventStatus status);
+
     @Query("SELECT e FROM Event e WHERE e.startTime >= :now ORDER BY e.startTime ASC")
     Page<Event> findUpcomingEvents(@Param("now") LocalDateTime now, Pageable pageable);
 }

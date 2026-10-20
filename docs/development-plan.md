@@ -88,10 +88,11 @@
 - [x] Dịch vụ `EmailService` gửi email xác nhận đặt vé và thông báo hủy sự kiện bất đồng bộ.
 - [x] Kiến trúc Domain Event: Bắn `BookingConfirmedEvent` và lắng nghe qua `BookingNotificationListener`.
 
-### Phase 9: Dashboard Thống Kê & Báo Cáo Doanh Thu
+### Phase 9: Dashboard Thống Kê & Báo Cáo Doanh Thu *(Đã hoàn thành)*
 
-- [ ] Organizer Dashboard: Doanh thu theo thời gian, số vé đã bán, tỷ lệ lấp đầy ghế.
-- [ ] Admin Dashboard: Toàn cảnh người dùng, số lượng sự kiện, tổng giao dịch.
+- [x] Organizer Dashboard: Doanh thu thực tế, số vé phát hành, số vé check-in, tỷ lệ check-in theo sự kiện (`GET /api/v1/dashboard/organizer`, `GET /api/v1/dashboard/organizer/events/{eventId}`).
+- [x] Admin Dashboard: Toàn cảnh người dùng theo vai trò (Customer, Organizer, Staff), số lượng sự kiện, tổng giao dịch & doanh thu toàn sàn (`GET /api/v1/dashboard/admin`).
+- [x] Tối ưu JPQL Aggregation queries với `COALESCE(SUM(...), 0)` tránh trả về NULL và kiểm soát quyền truy cập chi tiết.
 
 ### Phase 10: Docker & Triển Khai Hoàn Thiện
 
