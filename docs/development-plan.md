@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đã hoàn thành **Phase 3: Module Venue & Seat Map**. Đang chuẩn bị **Phase 4: Module TicketType & Booking Cơ Bản**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (24/24 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 4: Module TicketType & Booking Cơ Bản**. Đang chuẩn bị **Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (36/36 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -51,11 +51,14 @@
 - [x] Gán địa điểm cho sự kiện và sinh bản sao `EventSeat`.
 - [x] API lấy sơ đồ ghế theo từng sự kiện (`GET /api/v1/events/{id}/seats`).
 
-### Phase 4: Module TicketType & Booking Cơ Bản
+### Phase 4: Module TicketType & Booking Cơ Bản *(Đã hoàn thành)*
 
-- [ ] Thiết kế Entity `TicketType` (Early Bird, Standard, VIP,... có giá và số lượng).
-- [ ] Thiết kế Entity `Booking` và `BookingItem` với mã đơn dạng `EVH-YYYYMMDD-XXXX`.
-- [ ] API tạo Booking với validation nghiệp vụ và transaction toàn vẹn.
+- [x] Thiết kế Entity `TicketType` (Early Bird, Standard, VIP,... có giá, số lượng, min/max per order).
+- [x] Thiết kế Entity `Booking` và `BookingItem` với mã đơn dạng `EVH-YYYYMMDD-XXXX`.
+- [x] API quản lý loại vé (`POST`, `GET /api/v1/events/{eventId}/ticket-types`).
+- [x] API tạo Booking (`POST /api/v1/bookings`) với validation nghiệp vụ, trừ quota vé và transaction toàn vẹn.
+- [x] API xem lịch sử đặt vé (`GET /api/v1/bookings/my`) và xem chi tiết theo mã đơn.
+- [x] API hủy đơn hàng (`POST /api/v1/bookings/{code}/cancel`) giải phóng tồn kho vé và hoàn trạng thái ghế.
 
 ### Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)
 
