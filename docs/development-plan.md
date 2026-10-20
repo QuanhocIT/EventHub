@@ -148,6 +148,22 @@
 - [x] Tích hợp nạp sẵn dữ liệu mẫu trong `DataSeeder` với verified review demo kèm số sao thực tế.
 - [x] Viết bộ Unit Tests hoàn chỉnh `ReviewServiceTest` với 15 test cases, nâng tổng số kiểm thử toàn dự án lên **109 tests (100% PASS)**.
 
+### Phase 15: Module Hồ Sơ Đơn Vị Tổ Chức (Organizer Profile, Brand Page & Follow System) *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `OrganizerProfile` quản lý thương hiệu ban tổ chức: Tên tổ chức, tiểu sử giới thiệu (bio), logoUrl, bannerUrl, website, email & số điện thoại liên hệ, liên kết mạng xã hội (Facebook, LinkedIn), huy hiệu xác thực (`verified`).
+- [x] Thiết kế Entity `OrganizerFollow` lưu vết quan hệ người dùng theo dõi ban tổ chức với ràng buộc duy nhất `@UniqueConstraint(name = "uk_user_organizer_follow", columnNames = {"user_id", "organizer_id"})`.
+- [x] **Hệ thống API toàn diện**:
+  - `GET /api/v1/organizers/{id}`: Trang công khai của ban tổ chức (kèm thống kê: tổng số sự kiện, số sự kiện đang mở, số người theo dõi, điểm đánh giá trung bình từ người tham dự, trạng thái đã theo dõi hay chưa).
+  - `GET /api/v1/organizers/{id}/events`: Danh sách các sự kiện đang mở bán của ban tổ chức (phân trang, sắp xếp theo thời gian mới nhất).
+  - `GET /api/v1/organizers/me`: Lấy thông tin hồ sơ của ban tổ chức đang đăng nhập.
+  - `PUT /api/v1/organizers/me`: Cập nhật thông tin thương hiệu (chỉ dành cho `ROLE_ORGANIZER` hoặc `ROLE_ADMIN`).
+  - `POST /api/v1/organizers/{id}/follow`: Theo dõi ban tổ chức (tự động chặn tự theo dõi chính mình, idempotent nếu đã theo dõi).
+  - `DELETE /api/v1/organizers/{id}/follow`: Bỏ theo dõi ban tổ chức.
+  - `GET /api/v1/organizers/following`: Danh sách các ban tổ chức người dùng đang theo dõi (phân trang).
+  - `PATCH /api/v1/organizers/{id}/verify`: Quản trị viên (`ROLE_ADMIN`) cấp hoặc thu hồi huy hiệu xác thực (Verified Badge).
+- [x] Tích hợp nạp sẵn dữ liệu mẫu trong `DataSeeder` với hồ sơ thương hiệu "Nexus Tech Media & Events" và quan hệ theo dõi mẫu.
+- [x] Viết bộ Unit Tests toàn diện `OrganizerServiceTest` với 12 test cases, nâng tổng số kiểm thử toàn dự án lên **121 tests (100% PASS)**.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -163,3 +179,4 @@
 - **Promotions & Concurrency Safety (Phase 12)**: Giải quyết bài toán concurrency với mã giảm giá số lượng có hạn; Quản lý vòng đời khuyến mãi và cơ chế bù trừ (compensation transaction) khi đơn hàng hủy.
 - **User Management & Business Safety Guards (Phase 13)**: Thiết kế API đổi mật khẩu an toàn; Kỹ thuật Self-Protection Guards (ngăn chặn Admin tự khóa hoặc tự tước quyền quản trị của chính mình, bảo vệ tính toàn vẹn hệ thống).
 - **Social Proof & Verified Attendee Pattern (Phase 14)**: Cơ chế chống đánh giá ảo (Verified Attendee Guard); Kỹ thuật Denormalization / Summary Caching trên bảng `events` để tối ưu chi phí truy vấn đọc cao (read-heavy) so với chi phí ghi thấp (write-rare) trong bài toán kiến trúc hệ thống lớn.
+- **Social Graph & Entity Separation (Phase 15)**: Tách bạch bảng `users` (danh tính/xác thực) và `organizer_profiles` (thương hiệu/kinh doanh) theo nguyên lý Single Responsibility Principle (SRP); Thiết kế quan hệ nhiều-nhiều tự tham chiếu (`Many-to-Many` qua bảng liên kết `organizer_follows`) với ràng buộc Composite Unique Index và Idempotent follow operations.

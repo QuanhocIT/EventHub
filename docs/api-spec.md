@@ -402,3 +402,105 @@ Tất cả các API trả về theo cấu trúc chuẩn:
 - **Endpoint**: `DELETE /api/v1/reviews/{reviewId}`
 - **Quyền**: Tác giả đánh giá hoặc `ROLE_ADMIN`
 - **Response**: `200 OK`
+
+---
+
+## 7. Organizer & Following APIs
+
+### 7.1 Lấy thông tin trang công khai của đơn vị tổ chức (Public Brand Profile)
+
+- **Endpoint**: `GET /api/v1/organizers/{id}`
+- **Quyền**: Public
+- **Response**: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Organizer profile retrieved successfully",
+  "data": {
+    "organizerId": 2,
+    "username": "organizer",
+    "organizationName": "Nexus Tech Media & Events",
+    "bio": "Đơn vị tiên phong tổ chức các hội nghị công nghệ, âm nhạc quy mô quốc tế tại Việt Nam.",
+    "logoUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7",
+    "bannerUrl": "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
+    "website": "https://nexustech.events",
+    "contactEmail": "contact@nexustech.events",
+    "contactPhone": "+84 28 3822 9999",
+    "facebookUrl": "https://facebook.com/nexustechevents",
+    "linkedinUrl": "https://linkedin.com/company/nexus-tech-events",
+    "verified": true,
+    "totalEvents": 6,
+    "activeEvents": 4,
+    "followerCount": 1540,
+    "averageRating": 4.92,
+    "isFollowed": false,
+    "memberSince": "2026-01-15T08:00:00"
+  }
+}
+```
+
+### 7.2 Lấy danh sách sự kiện đang mở của đơn vị tổ chức
+
+- **Endpoint**: `GET /api/v1/organizers/{id}/events`
+- **Quyền**: Public
+- **Query Parameters**:
+  - `page` (Integer, default 0)
+  - `size` (Integer, default 10)
+- **Response**: `200 OK` (`PageResponse<EventResponse>`)
+
+### 7.3 Lấy hồ sơ tổ chức của chính tài khoản đăng nhập
+
+- **Endpoint**: `GET /api/v1/organizers/me`
+- **Quyền**: Authenticated
+- **Response**: `200 OK` (`OrganizerProfileResponse`)
+
+### 7.4 Cập nhật thông tin thương hiệu đơn vị tổ chức
+
+- **Endpoint**: `PUT /api/v1/organizers/me`
+- **Quyền**: `ROLE_ORGANIZER`, `ROLE_ADMIN`
+- **Request Body**:
+
+```json
+{
+  "organizationName": "Nexus Tech Media & Events",
+  "bio": "Đơn vị tiên phong tổ chức các hội nghị công nghệ, âm nhạc quy mô quốc tế tại Việt Nam.",
+  "logoUrl": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7",
+  "bannerUrl": "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
+  "website": "https://nexustech.events",
+  "contactEmail": "contact@nexustech.events",
+  "contactPhone": "+84 28 3822 9999",
+  "facebookUrl": "https://facebook.com/nexustechevents",
+  "linkedinUrl": "https://linkedin.com/company/nexus-tech-events"
+}
+```
+
+- **Response**: `200 OK`
+
+### 7.5 Theo dõi đơn vị tổ chức (Follow)
+
+- **Endpoint**: `POST /api/v1/organizers/{id}/follow`
+- **Quyền**: Authenticated
+- **Đặc điểm**: Tự động chặn theo dõi chính mình (`BadRequestException`), idempotent nếu đã theo dõi từ trước.
+- **Response**: `200 OK`
+
+### 7.6 Bỏ theo dõi đơn vị tổ chức (Unfollow)
+
+- **Endpoint**: `DELETE /api/v1/organizers/{id}/follow`
+- **Quyền**: Authenticated
+- **Response**: `200 OK`
+
+### 7.7 Danh sách đơn vị tổ chức đang theo dõi
+
+- **Endpoint**: `GET /api/v1/organizers/following`
+- **Quyền**: Authenticated
+- **Query Parameters**:
+  - `page` (Integer, default 0)
+  - `size` (Integer, default 10)
+- **Response**: `200 OK` (`PageResponse<OrganizerSummaryResponse>`)
+
+### 7.8 Admin: Cấp / Thu hồi huy hiệu xác thực (Verified Badge)
+
+- **Endpoint**: `PATCH /api/v1/organizers/{id}/verify?verified=true`
+- **Quyền**: `ROLE_ADMIN`
+- **Response**: `200 OK`

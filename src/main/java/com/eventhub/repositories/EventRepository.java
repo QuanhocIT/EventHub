@@ -28,6 +28,13 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
 
     long countByOrganizerIdAndStatus(Long organizerId, EventStatus status);
 
+    Page<Event> findByOrganizerIdOrderByStartTimeDesc(Long organizerId, Pageable pageable);
+
+    Page<Event> findByOrganizerIdAndStatusOrderByStartTimeDesc(Long organizerId, EventStatus status, Pageable pageable);
+
+    @Query("SELECT COALESCE(AVG(e.averageRating), 0.0) FROM Event e WHERE e.organizer.id = :organizerId AND e.reviewCount > 0")
+    Double getAverageRatingByOrganizerId(@Param("organizerId") Long organizerId);
+
     @Query("SELECT e FROM Event e WHERE e.startTime >= :now ORDER BY e.startTime ASC")
     Page<Event> findUpcomingEvents(@Param("now") LocalDateTime now, Pageable pageable);
 }

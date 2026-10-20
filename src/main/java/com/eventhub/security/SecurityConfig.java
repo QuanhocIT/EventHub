@@ -54,6 +54,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
                         // Public category viewing
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                        // Authenticated organizer endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/v1/organizers/me", "/api/v1/organizers/following").authenticated()
+                        // Public organizer viewing
+                        .requestMatchers(HttpMethod.GET, "/api/v1/organizers/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

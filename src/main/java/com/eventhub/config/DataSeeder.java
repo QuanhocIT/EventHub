@@ -21,12 +21,16 @@ import com.eventhub.enums.PaymentStatus;
 import com.eventhub.enums.SeatZone;
 import com.eventhub.enums.TicketStatus;
 import com.eventhub.enums.UserRole;
+import com.eventhub.entities.OrganizerFollow;
+import com.eventhub.entities.OrganizerProfile;
 import com.eventhub.entities.Review;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.CategoryRepository;
 import com.eventhub.repositories.CouponRepository;
 import com.eventhub.repositories.EventRepository;
 import com.eventhub.repositories.EventSeatRepository;
+import com.eventhub.repositories.OrganizerFollowRepository;
+import com.eventhub.repositories.OrganizerProfileRepository;
 import com.eventhub.repositories.PaymentRepository;
 import com.eventhub.repositories.ReviewRepository;
 import com.eventhub.repositories.SeatRepository;
@@ -66,6 +70,8 @@ public class DataSeeder implements CommandLineRunner {
     private final PaymentRepository paymentRepository;
     private final TicketRepository ticketRepository;
     private final ReviewRepository reviewRepository;
+    private final OrganizerProfileRepository organizerProfileRepository;
+    private final OrganizerFollowRepository organizerFollowRepository;
     private final PasswordEncoder passwordEncoder;
     private final QrCodeService qrCodeService;
 
@@ -80,6 +86,7 @@ public class DataSeeder implements CommandLineRunner {
         seedCoupons();
         seedSampleBookingsAndTickets();
         seedReviews();
+        seedOrganizerProfilesAndFollows();
         log.info("Database seeding process completed successfully!");
     }
 
@@ -724,6 +731,42 @@ public class DataSeeder implements CommandLineRunner {
             eventRepository.save(techEvent);
 
             log.info("Seeded demo verified review for event: {}", techEvent.getTitle());
+        }
+    }
+
+    private void seedOrganizerProfilesAndFollows() {
+        if (organizerProfileRepository.count() > 0) {
+            log.info("Organizer profiles already seeded, skipping.");
+            return;
+        }
+
+        User organizer = userRepository.findByUsername("organizer").orElse(null);
+        User customer = userRepository.findByUsername("customer").orElse(null);
+
+        if (organizer != null) {
+            OrganizerProfile profile = OrganizerProfile.builder()
+                    .user(organizer)
+                    .organizationName("Nexus Tech Media & Events")
+                    .bio("Đơn vị tiên phong tổ chức các hội nghị công nghệ, âm nhạc và giải trí quy mô quốc tế tại Việt Nam.")
+                    .logoUrl("https://images.unsplash.com/photo-1519085360753-af0119f7cbe7")
+                    .bannerUrl("https://images.unsplash.com/photo-1540575467063-178a50c2df87")
+                    .website("https://nexustech.events")
+                    .contactEmail("contact@nexustech.events")
+                    .contactPhone("+84 28 3822 9999")
+                    .facebookUrl("https://facebook.com/nexustechevents")
+                    .linkedinUrl("https://linkedin.com/company/nexus-tech-events")
+                    .verified(true)
+                    .build();
+            organizerProfileRepository.save(profile);
+
+            if (customer != null) {
+                organizerFollowRepository.save(OrganizerFollow.builder()
+                        .user(customer)
+                        .organizer(organizer)
+                        .build());
+            }
+
+            log.info("Seeded demo organizer profile and follower for 'Nexus Tech Media & Events'");
         }
     }
 }
