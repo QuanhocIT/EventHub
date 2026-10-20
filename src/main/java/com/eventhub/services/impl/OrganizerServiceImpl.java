@@ -235,6 +235,7 @@ public class OrganizerServiceImpl implements OrganizerService {
 
     @Override
     @Transactional
+    @com.eventhub.aspect.Auditable(action = "ORGANIZER_VERIFY", entityType = "OrganizerProfile", description = "Admin updated organizer verification status")
     public OrganizerProfileResponse verifyOrganizer(Long organizerId, boolean verified) {
         log.info("Admin setting verification status of organizer ID {} to {}", organizerId, verified);
 

@@ -21,9 +21,11 @@ import com.eventhub.enums.PaymentStatus;
 import com.eventhub.enums.SeatZone;
 import com.eventhub.enums.TicketStatus;
 import com.eventhub.enums.UserRole;
+import com.eventhub.entities.AuditLog;
 import com.eventhub.entities.OrganizerFollow;
 import com.eventhub.entities.OrganizerProfile;
 import com.eventhub.entities.Review;
+import com.eventhub.repositories.AuditLogRepository;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.CategoryRepository;
 import com.eventhub.repositories.CouponRepository;
@@ -72,6 +74,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ReviewRepository reviewRepository;
     private final OrganizerProfileRepository organizerProfileRepository;
     private final OrganizerFollowRepository organizerFollowRepository;
+    private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final QrCodeService qrCodeService;
 
@@ -87,6 +90,7 @@ public class DataSeeder implements CommandLineRunner {
         seedSampleBookingsAndTickets();
         seedReviews();
         seedOrganizerProfilesAndFollows();
+        seedAuditLogs();
         log.info("Database seeding process completed successfully!");
     }
 
@@ -768,5 +772,39 @@ public class DataSeeder implements CommandLineRunner {
 
             log.info("Seeded demo organizer profile and follower for 'Nexus Tech Media & Events'");
         }
+    }
+
+    private void seedAuditLogs() {
+        if (auditLogRepository.count() > 0) {
+            return;
+        }
+
+        auditLogRepository.save(AuditLog.builder()
+                .username("admin")
+                .action("SYSTEM_INIT")
+                .entityType("System")
+                .entityId("0")
+                .description("EventHub platform initial baseline seed deployed")
+                .ipAddress("127.0.0.1")
+                .userAgent("SystemBootstrap")
+                .status("SUCCESS")
+                .executionTimeMs(120L)
+                .createdAt(LocalDateTime.now().minusHours(1))
+                .build());
+
+        auditLogRepository.save(AuditLog.builder()
+                .username("admin")
+                .action("ORGANIZER_VERIFY")
+                .entityType("OrganizerProfile")
+                .entityId("2")
+                .description("Admin verified organization 'Nexus Tech Media & Events'")
+                .ipAddress("127.0.0.1")
+                .userAgent("Mozilla/5.0")
+                .status("SUCCESS")
+                .executionTimeMs(28L)
+                .createdAt(LocalDateTime.now().minusMinutes(30))
+                .build());
+
+        log.info("Seeded initial security audit logs");
     }
 }

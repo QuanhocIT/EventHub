@@ -92,6 +92,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @com.eventhub.aspect.Auditable(action = "USER_STATUS_UPDATE", entityType = "User", description = "Admin updated user enabled status")
     public UserProfileResponse updateUserStatus(Long id, boolean enabled, String currentAdminUsername) {
         log.info("Admin {} updating user ID: {} status to enabled={}", currentAdminUsername, id, enabled);
         User targetUser = userRepository.findById(id)
@@ -109,6 +110,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @com.eventhub.aspect.Auditable(action = "USER_ROLE_UPDATE", entityType = "User", description = "Admin updated user role")
     public UserProfileResponse updateUserRole(Long id, UserRole newRole, String currentAdminUsername) {
         log.info("Admin {} updating user ID: {} role to {}", currentAdminUsername, id, newRole);
         User targetUser = userRepository.findById(id)

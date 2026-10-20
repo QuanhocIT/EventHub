@@ -164,6 +164,33 @@
 - [x] Tích hợp nạp sẵn dữ liệu mẫu trong `DataSeeder` với hồ sơ thương hiệu "Nexus Tech Media & Events" và quan hệ theo dõi mẫu.
 - [x] Viết bộ Unit Tests toàn diện `OrganizerServiceTest` với 12 test cases, nâng tổng số kiểm thử toàn dự án lên **121 tests (100% PASS)**.
 
+### Phase 16: Module Audit Logging & Activity Trail (Spring AOP & Security Auditing) *(Đã hoàn thành)*
+
+- [x] Thiết kế Entity `AuditLog`: Lưu vết hành động (`action`), đối tượng chịu tác động (`entityType`, `entityId`), người thực hiện (`username`, `userId`), địa chỉ mạng IP khách (`ipAddress` trích xuất `X-Forwarded-For`), trình duyệt/thiết bị (`userAgent`), trạng thái (`SUCCESS`/`FAILED`), chi tiết lỗi và thời gian thực thi mili-giây (`executionTimeMs`).
+- [x] Xây dựng Custom Annotation `@Auditable` và Aspect `AuditLogAspect` với `@Around` advice bắt tự động mọi thao tác nhạy cảm:
+  - Khóa/mở tài khoản người dùng (`USER_STATUS_UPDATE`).
+  - Thay đổi phân quyền vai trò (`USER_ROLE_UPDATE`).
+  - Cấp huy hiệu xác thực tổ chức (`ORGANIZER_VERIFY`).
+- [x] Độc lập giao dịch bằng `@Transactional(propagation = Propagation.REQUIRES_NEW)` đảm bảo nhật ký kiểm toán không bị rollback ngoài ý muốn nếu nghiệp vụ xảy ra lỗi.
+- [x] API Quản trị viên tra cứu lịch sử hành vi `GET /api/v1/admin/audit-logs` hỗ trợ lọc động Specification đa tiêu chí (theo action, username, entityType, phân trang và sắp xếp).
+- [x] Tích hợp nạp sẵn các bản ghi audit log mẫu trong `DataSeeder`.
+- [x] Viết bộ Unit Tests cho `AuditLogServiceTest`.
+
+### Phase 17: Module Xuất Báo Cáo Doanh Thu & Danh Sách Khách Tham Gia (Apache POI Excel Export) *(Đã hoàn thành)*
+
+- [x] Tích hợp thư viện Apache POI (`poi`, `poi-ooxml 5.3.0`) tối ưu bộ nhớ khi render bảng tính `.xlsx`.
+- [x] **Xuất danh sách khách tham dự (`exportEventAttendees`)**:
+  - `GET /api/v1/export/events/{eventId}/attendees` (Quyền: Ban tổ chức sự kiện hoặc Admin).
+  - Định dạng bảng tính chuyên nghiệp: Header thương hiệu xanh dương đậm (`ROYAL_BLUE`), font chữ đậm, căn giữa.
+  - Cột dữ liệu đầy đủ: STT, Mã vé, Mã đơn hàng, Họ tên, Email, Số điện thoại, Hạng vé, Vị trí ghế, Trạng thái vé (VALID/USED), Thời gian check-in tại cổng, Ngày mua vé.
+  - Tự động căn chỉnh độ rộng cột (`sheet.autoSizeColumn`).
+- [x] **Xuất báo cáo tài chính & doanh thu theo năm (`exportOrganizerRevenueReport`)**:
+  - `GET /api/v1/export/organizers/{organizerId}/revenue?year=2026` (Quyền: Đơn vị tổ chức sở hữu hoặc Admin).
+  - Bảng tổng kết số liệu: Tổng số đơn thành công, Tổng tiền vé, Tổng giảm giá voucher, Thực thu ròng.
+  - Bảng chi tiết 12 tháng: Số lượng đơn hàng, Doanh thu gộp, Chiết khấu, Doanh thu ròng theo từng tháng.
+- [x] Viết bộ Unit Tests cho `ExcelExportServiceTest` xác thực cấu trúc byte workbook `.xlsx`.
+- [x] Nâng tổng số kiểm thử tự động toàn dự án lên **128 tests (100% PASS)**.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -180,3 +207,5 @@
 - **User Management & Business Safety Guards (Phase 13)**: Thiết kế API đổi mật khẩu an toàn; Kỹ thuật Self-Protection Guards (ngăn chặn Admin tự khóa hoặc tự tước quyền quản trị của chính mình, bảo vệ tính toàn vẹn hệ thống).
 - **Social Proof & Verified Attendee Pattern (Phase 14)**: Cơ chế chống đánh giá ảo (Verified Attendee Guard); Kỹ thuật Denormalization / Summary Caching trên bảng `events` để tối ưu chi phí truy vấn đọc cao (read-heavy) so với chi phí ghi thấp (write-rare) trong bài toán kiến trúc hệ thống lớn.
 - **Social Graph & Entity Separation (Phase 15)**: Tách bạch bảng `users` (danh tính/xác thực) và `organizer_profiles` (thương hiệu/kinh doanh) theo nguyên lý Single Responsibility Principle (SRP); Thiết kế quan hệ nhiều-nhiều tự tham chiếu (`Many-to-Many` qua bảng liên kết `organizer_follows`) với ràng buộc Composite Unique Index và Idempotent follow operations.
+- **Aspect-Oriented Programming & Security Auditing (Phase 16)**: Sử dụng Spring AOP (`@Around`) để tách bạch Cross-cutting Concerns (Logging/Auditing) khỏi Core Business Logic; Kỹ thuật trích xuất Header `X-Forwarded-For` đằng sau Reverse Proxy/Load Balancer; Tách biệt Transaction Boundary với `Propagation.REQUIRES_NEW` để đảm bảo log kiểm toán luôn được ghi lại kể cả khi giao dịch chính bị rollback do ngoại lệ.
+- **Binary Streaming & Spreadsheet Generation (Phase 17)**: Kỹ thuật xuất file nhị phân trực tiếp ra HTTP Response Stream với MIME type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` và header `Content-Disposition`; Quản lý bộ nhớ JVM khi tạo tài liệu Excel lớn (SXSSF vs XSSF) bằng Apache POI.

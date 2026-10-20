@@ -504,3 +504,79 @@ Tất cả các API trả về theo cấu trúc chuẩn:
 - **Endpoint**: `PATCH /api/v1/organizers/{id}/verify?verified=true`
 - **Quyền**: `ROLE_ADMIN`
 - **Response**: `200 OK`
+
+---
+
+## 8. Security Audit Log APIs
+
+### 8.1 Admin: Truy vấn lịch sử vết hoạt động nhạy cảm (Audit Logs)
+
+- **Endpoint**: `GET /api/v1/admin/audit-logs`
+- **Quyền**: `ROLE_ADMIN`
+- **Query Parameters**:
+  - `action` (String, optional): Lọc theo hành vi (e.g. `USER_STATUS_UPDATE`, `USER_ROLE_UPDATE`, `ORGANIZER_VERIFY`)
+  - `username` (String, optional): Lọc theo người thực hiện
+  - `entityType` (String, optional): Lọc theo loại đối tượng (e.g. `User`, `OrganizerProfile`, `Booking`)
+  - `page` (Integer, default 0)
+  - `size` (Integer, default 15)
+  - `sortBy` (String, default "createdAt")
+  - `direction` (String, default "desc")
+- **Response**: `200 OK` (`PageResponse<AuditLogResponse>`)
+
+```json
+{
+  "success": true,
+  "message": "Audit logs retrieved successfully",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "userId": 1,
+        "username": "admin",
+        "action": "USER_STATUS_UPDATE",
+        "entityType": "User",
+        "entityId": "5",
+        "description": "Admin updated user enabled status",
+        "ipAddress": "192.168.1.100",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...",
+        "status": "SUCCESS",
+        "errorMessage": null,
+        "executionTimeMs": 35,
+        "createdAt": "2026-10-21T05:30:00"
+      }
+    ],
+    "pageNumber": 0,
+    "pageSize": 15,
+    "totalElements": 1,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+## 9. Data Export APIs (Excel)
+
+### 9.1 Xuất danh sách khách tham dự sự kiện ra file Excel (.xlsx)
+
+- **Endpoint**: `GET /api/v1/export/events/{eventId}/attendees`
+- **Quyền**: Ban tổ chức sự kiện (`ROLE_ORGANIZER`) hoặc `ROLE_ADMIN`
+- **Content-Type Trả về**: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- **Header**: `Content-Disposition: attachment; filename="attendees_event_{eventId}.xlsx"`
+- **Đặc điểm định dạng**:
+  - Tiêu đề sự kiện & địa điểm tổ chức.
+  - Header bảng xanh đậm, chữ in hoa, căn giữa.
+  - Bảng chi tiết: STT, Mã vé, Mã đơn hàng, Họ tên người tham dự, Email, Số điện thoại, Hạng vé, Vị trí ghế, Trạng thái (VALID/USED), Thời gian check-in tại cổng, Ngày mua vé.
+  - Tự động căn chỉnh độ rộng cột (`autoSizeColumn`).
+
+### 9.2 Xuất báo cáo tài chính & doanh thu theo năm ra file Excel (.xlsx)
+
+- **Endpoint**: `GET /api/v1/export/organizers/{organizerId}/revenue`
+- **Quyền**: Đơn vị tổ chức sở hữu (`ROLE_ORGANIZER`) hoặc `ROLE_ADMIN`
+- **Query Parameters**:
+  - `year` (Integer, optional - mặc định năm hiện tại, e.g. `2026`)
+- **Content-Type Trả về**: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- **Header**: `Content-Disposition: attachment; filename="revenue_organizer_{organizerId}_{year}.xlsx"`
+- **Đặc điểm định dạng**:
+  - Thẻ tóm tắt tổng quan: Tổng số đơn hàng thành công, Tổng tiền vé, Tổng chiết khấu voucher, Thực thu (Net Total).
+  - Bảng phân bổ chi tiết 12 tháng: Số đơn thành công, Doanh thu gộp, Tiền giảm giá, Doanh thu ròng.
