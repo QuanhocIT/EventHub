@@ -91,7 +91,7 @@ public class BookingServiceImpl implements BookingService {
             EventSeat eventSeat = null;
 
             if (itemReq.getTicketTypeId() != null) {
-                ticketType = ticketTypeRepository.findByIdAndEventId(itemReq.getTicketTypeId(), event.getId())
+                ticketType = ticketTypeRepository.findByIdAndEventIdWithLock(itemReq.getTicketTypeId(), event.getId())
                         .orElseThrow(() -> new ResourceNotFoundException("TicketType", "id", itemReq.getTicketTypeId()));
 
                 if (!Boolean.TRUE.equals(ticketType.getIsActive())) {
@@ -119,7 +119,7 @@ public class BookingServiceImpl implements BookingService {
             }
 
             if (itemReq.getEventSeatId() != null) {
-                eventSeat = eventSeatRepository.findById(itemReq.getEventSeatId())
+                eventSeat = eventSeatRepository.findByIdWithLock(itemReq.getEventSeatId())
                         .orElseThrow(() -> new ResourceNotFoundException("EventSeat", "id", itemReq.getEventSeatId()));
 
                 if (!eventSeat.getEvent().getId().equals(event.getId())) {

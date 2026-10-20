@@ -20,6 +20,22 @@ services:
     networks:
       - eventhub-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: eventhub-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - eventhub-network
+
   backend:
     build:
       context: .
@@ -29,6 +45,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8088
@@ -37,6 +55,8 @@ services:
       DB_NAME: eventhub_db
       DB_USER: root
       DB_PASSWORD: root
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
       JWT_EXPIRATION_MS: 86400000
     ports:
@@ -46,6 +66,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

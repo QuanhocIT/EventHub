@@ -115,7 +115,7 @@ class BookingServiceTest {
 
         when(userRepository.findByUsername("john_customer")).thenReturn(Optional.of(customer));
         when(eventRepository.findById(10L)).thenReturn(Optional.of(publishedEvent));
-        when(ticketTypeRepository.findByIdAndEventId(20L, 10L)).thenReturn(Optional.of(ticketType));
+        when(ticketTypeRepository.findByIdAndEventIdWithLock(20L, 10L)).thenReturn(Optional.of(ticketType));
         when(bookingRepository.findByBookingCode(any())).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
@@ -163,7 +163,7 @@ class BookingServiceTest {
 
         when(userRepository.findByUsername("john_customer")).thenReturn(Optional.of(customer));
         when(eventRepository.findById(10L)).thenReturn(Optional.of(publishedEvent));
-        when(eventSeatRepository.findById(30L)).thenReturn(Optional.of(eventSeat));
+        when(eventSeatRepository.findByIdWithLock(30L)).thenReturn(Optional.of(eventSeat));
         when(bookingRepository.findByBookingCode(any())).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
@@ -207,7 +207,7 @@ class BookingServiceTest {
 
         when(userRepository.findByUsername("john_customer")).thenReturn(Optional.of(customer));
         when(eventRepository.findById(10L)).thenReturn(Optional.of(publishedEvent));
-        when(ticketTypeRepository.findByIdAndEventId(20L, 10L)).thenReturn(Optional.of(ticketType));
+        when(ticketTypeRepository.findByIdAndEventIdWithLock(20L, 10L)).thenReturn(Optional.of(ticketType));
 
         assertThatThrownBy(() -> bookingService.createBooking(request, "john_customer"))
                 .isInstanceOf(BadRequestException.class)

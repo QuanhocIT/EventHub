@@ -7,8 +7,8 @@
 
 ## 📌 Tổng Quan Tiến Độ Dự Án
 
-- **Trạng thái hiện tại**: Đã hoàn thành **Phase 4: Module TicketType & Booking Cơ Bản**. Đang chuẩn bị **Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)**.
-- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (36/36 tests pass).
+- **Trạng thái hiện tại**: Đã hoàn thành **Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)**. Đang chuẩn bị **Phase 6: Module Payment & Xử Lý Idempotency**.
+- **Base nền tảng**: Đã kiểm thử tự động đạt 100% (42/42 tests pass).
 - **GitHub Repository**: [QuanhocIT/EventHub](https://github.com/QuanhocIT/EventHub)
 
 ---
@@ -60,12 +60,12 @@
 - [x] API xem lịch sử đặt vé (`GET /api/v1/bookings/my`) và xem chi tiết theo mã đơn.
 - [x] API hủy đơn hàng (`POST /api/v1/bookings/{code}/cancel`) giải phóng tồn kho vé và hoàn trạng thái ghế.
 
-### Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold)
+### Phase 5: Xử Lý Concurrency & Tạm Giữ Ghế (Temporary Seat Hold) *(Đã hoàn thành)*
 
-- [ ] Tích hợp Redis vào dự án (`spring-boot-starter-data-redis`).
-- [ ] Cơ chế Temporary Seat Hold với Redis TTL (5 phút): `seat_hold:{eventId}:{seatId}:{userId}`.
-- [ ] Xử lý Race Condition / Overselling bằng **Pessimistic Locking** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) tại tầng Database.
-- [ ] Cơ chế tự động giải phóng ghế khi hết thời gian giữ chỗ mà không thanh toán.
+- [x] Tích hợp Redis vào dự án (`spring-boot-starter-data-redis`) và bổ sung Redis vào `docker-compose.yml`.
+- [x] Cơ chế Temporary Seat Hold với Redis TTL (5 phút): `seat_hold:{eventId}:{seatId}`.
+- [x] Xử lý Race Condition / Overselling bằng **Pessimistic Locking** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) tại tầng Database.
+- [x] Tác vụ định kỳ `@Scheduled` tự động giải phóng ghế và hoàn trả tồn kho vé khi đơn hàng quá hạn thanh toán (`BookingCleanupJob`).
 
 ### Phase 6: Module Payment & Xử Lý Idempotency
 

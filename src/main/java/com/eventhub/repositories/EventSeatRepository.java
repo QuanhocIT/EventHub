@@ -2,7 +2,11 @@ package com.eventhub.repositories;
 
 import com.eventhub.entities.EventSeat;
 import com.eventhub.enums.EventSeatStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +24,8 @@ public interface EventSeatRepository extends JpaRepository<EventSeat, Long> {
     boolean existsByEventId(Long eventId);
 
     Optional<EventSeat> findByEventIdAndSeatId(Long eventId, Long seatId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT es FROM EventSeat es WHERE es.id = :id")
+    Optional<EventSeat> findByIdWithLock(@Param("id") Long id);
 }
