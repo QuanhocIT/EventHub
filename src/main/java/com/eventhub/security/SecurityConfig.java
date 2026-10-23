@@ -60,6 +60,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/organizers/me", "/api/v1/organizers/following").authenticated()
                         // Public organizer viewing
                         .requestMatchers(HttpMethod.GET, "/api/v1/organizers/**").permitAll()
+                        // Public cinema viewing (phim, cụm rạp, suất chiếu, bắp nước, sơ đồ ghế)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/cinema/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/cinema/bookings").authenticated()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

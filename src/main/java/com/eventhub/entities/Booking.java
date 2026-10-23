@@ -51,8 +51,19 @@ public class Booking extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
+    @JoinColumn(name = "event_id", nullable = true)
     private Event event;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "showtime_id", nullable = true)
+    private Showtime showtime;
+
+    @Column(name = "booking_type", length = 20)
+    @Builder.Default
+    private String bookingType = "EVENT";
+
+    @Column(name = "concessions_json", columnDefinition = "TEXT")
+    private String concessionsJson;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

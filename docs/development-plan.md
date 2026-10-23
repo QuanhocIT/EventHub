@@ -191,6 +191,54 @@
 - [x] Viết bộ Unit Tests cho `ExcelExportServiceTest` xác thực cấu trúc byte workbook `.xlsx`.
 - [x] Nâng tổng số kiểm thử tự động toàn dự án lên **128 tests (100% PASS)**.
 
+### Phase 18: Frontend Admin & Organizer Management Portal (Dashboard, Biểu Đồ Doanh Thu, Quản Trị User, Audit Trail & Xuất Báo Cáo Excel) *(Đã hoàn thành)*
+
+- [x] **Xây dựng Trung Tâm Điều Hành & Quản Trị Toàn Diện (`/dashboard`, `/admin`)**:
+  - Giao diện trực quan tích hợp switcher đa góc nhìn: **Góc nhìn Quản Trị Viên (Admin)** và **Góc nhìn Ban Tổ Chức (Organizer)**.
+  - Tích hợp điều hướng trực tiếp trên [Navbar.vue](file:///c:/Users/ADMIN/EventHub/frontend/src/components/Navbar.vue) (desktop menu, user dropdown và mobile menu).
+- [x] **Tab 1: Tổng Quan KPI & Biểu Đồ Doanh Thu (Overview & Analytics)**:
+  - 4 Thẻ KPI động: Doanh thu thực tế, Tổng số vé phát hành & tỷ lệ check-in, Sự kiện mở bán, Số lượng người dùng & đơn hàng.
+  - Biểu đồ cột tương tác trực quan 12 tháng (`monthlyStats`) hiển thị doanh thu kèm tooltip tiền tệ VNĐ và chỉ số tăng trưởng.
+  - Phân bổ người dùng theo vai trò (Customer, Organizer, Staff) và huy hiệu bảo mật Anti-Passback.
+- [x] **Tab 2: Sự Kiện & Phân Tích Vé Chi Tiết (Events & Attendance Analytics)**:
+  - Bảng danh sách sự kiện đầy đủ: Tên, banner, ngày giờ, địa điểm, trạng thái mở bán, giá vé.
+  - Modal phân tích chi tiết từng sự kiện: Doanh thu, số vé phát hành, lượt khách đã check-in qua cổng và tỷ lệ tham dự.
+  - Tích hợp nút **Xuất danh sách khách tham dự (.xlsx)** gọi API backend `/api/v1/export/events/{id}/attendees`.
+- [x] **Tab 3: Quản Lý Người Dùng & Phân Quyền (Admin User Administration)**:
+  - Bộ lọc đa năng: Tìm kiếm theo họ tên, username, email, SĐT; Lọc theo vai trò (Customer/Organizer/Staff/Admin) và trạng thái (Hoạt động/Đã khóa).
+  - Khóa / Mở khóa tài khoản an toàn với cơ chế bảo vệ Self-Protection Guard (Admin không thể tự khóa chính mình).
+  - Phân quyền nhanh vai trò người dùng (Customer <-> Staff <-> Organizer <-> Admin).
+- [x] **Tab 4: Nhật Ký Kiểm Toán An Ninh (Security Audit Trail)**:
+  - Bảng tra cứu toàn bộ hành vi nhạy cảm: Thời gian, Action (`USER_STATUS_UPDATE`, `USER_ROLE_UPDATE`, `ORGANIZER_VERIFY`, `EXPORT_ATTENDEES`, `USER_LOGIN_FAILED`), Người thực hiện, Đối tượng, IP khách, Trạng thái (SUCCESS/FAILED) và Thời gian thực thi mili-giây (`ms`).
+- [x] **Xuất Báo Cáo Tài Chính Năm (.xlsx)**:
+  - Nút xuất file Excel báo cáo doanh thu tài chính tích hợp gọi API backend `/api/v1/export/organizers/{id}/revenue`.
+
+### Phase 19: Triển Khai Chuyên Sâu Toàn Diện 4 Vai Trò (Admin, Organizer, Staff, Customer) *(Đã hoàn thành)*
+
+- [x] **Vai Trò 1: Khách Hàng (Customer Portal - `/profile`)**:
+  - Giao diện 4 phân hệ hiện đại: Thông tin tài khoản, Đổi mật khẩu an toàn, Quản lý đơn hàng & vé điện tử, Danh sách ban tổ chức đang theo dõi.
+  - Tích hợp API hủy đơn hàng với modal xác nhận và cập nhật trạng thái đơn real-time.
+  - Tích hợp API hủy theo dõi (`unfollow`) trực tiếp từ danh sách ban tổ chức.
+- [x] **Vai Trò 2: Nhân Viên Soát Vé (Staff Gate Terminal - `/dashboard?tab=staff_scanner`)**:
+  - Máy soát vé điện tử tại cổng: Hỗ trợ quét mã QR bằng camera và nhập mã vé thủ công.
+  - Tích hợp chuẩn Web Audio API tổng hợp âm thanh phản hồi âm học (Beep thanh 880Hz khi hợp lệ, Buzzer trầm 220Hz khi lỗi).
+  - Kết nối REST API `POST /api/v1/tickets/{ticketCode}/check-in` với cơ chế Anti-Passback ngăn chặn tuyệt đối vé quay vòng.
+  - Bảng nhật ký cổng thời gian thực (Gate Activity Log) ghi lại từng lượt soát vé thành công/thất bại.
+- [x] **Vai Trò 3: Ban Tổ Chức (Organizer Management Suite)**:
+  - Form Wizard tạo sự kiện kết nối trực tiếp backend `POST /api/v1/events` với chọn địa điểm, ngày giờ, số lượng vé và upload banner.
+  - Quản lý mã giảm giá sự kiện (`org_vouchers`) kết nối `POST /api/v1/coupons` với chiết khấu theo % hoặc số tiền cố định.
+  - Quản trị hồ sơ thương hiệu (`org_profile`) cho phép cập nhật tên tổ chức, tiểu sử, website, hotline kết nối `GET/PUT /api/v1/organizers/me`.
+  - Tích hợp xuất danh sách khách tham dự và báo cáo doanh thu năm ra file Excel `.xlsx`.
+- [x] **Vai Trò 4: Quản Trị Viên Hệ Thống (System Admin)**:
+  - Quản lý danh mục sự kiện toàn sàn (`admin_categories`): Thêm danh mục mới, xem số lượng sự kiện thuộc danh mục, xóa danh mục qua REST API.
+  - Quản lý toàn sàn mã ưu đãi (`admin_coupons`).
+  - Quản trị người dùng với cơ chế Self-Protection Guard chống tự khóa/tự giáng cấp bản thân.
+  - Duyệt huy hiệu tích xanh cho đơn vị tổ chức uy tín (`PATCH /api/v1/organizers/{id}/verify`).
+  - Giám sát an ninh hệ thống với Security Audit Trail.
+- [x] **Điều Hướng & Trải Nghiệm Người Dùng (Navigation & UX)**:
+  - Cập nhật [Navbar.vue](file:///c:/Users/ADMIN/EventHub/frontend/src/components/Navbar.vue) hiển thị shortcut thông minh theo từng vai trò (Trang cá nhân, Cổng soát vé Staff, Quản lý sự kiện Organizer, Quản trị Admin).
+  - Cập nhật Router guards cho phép `ROLE_STAFF` truy cập trực tiếp bảng điều khiển chuyên biệt.
+
 ---
 
 ## 📚 Kỹ Năng Phỏng Vấn Trọng Tâm Từng Module
@@ -209,3 +257,4 @@
 - **Social Graph & Entity Separation (Phase 15)**: Tách bạch bảng `users` (danh tính/xác thực) và `organizer_profiles` (thương hiệu/kinh doanh) theo nguyên lý Single Responsibility Principle (SRP); Thiết kế quan hệ nhiều-nhiều tự tham chiếu (`Many-to-Many` qua bảng liên kết `organizer_follows`) với ràng buộc Composite Unique Index và Idempotent follow operations.
 - **Aspect-Oriented Programming & Security Auditing (Phase 16)**: Sử dụng Spring AOP (`@Around`) để tách bạch Cross-cutting Concerns (Logging/Auditing) khỏi Core Business Logic; Kỹ thuật trích xuất Header `X-Forwarded-For` đằng sau Reverse Proxy/Load Balancer; Tách biệt Transaction Boundary với `Propagation.REQUIRES_NEW` để đảm bảo log kiểm toán luôn được ghi lại kể cả khi giao dịch chính bị rollback do ngoại lệ.
 - **Binary Streaming & Spreadsheet Generation (Phase 17)**: Kỹ thuật xuất file nhị phân trực tiếp ra HTTP Response Stream với MIME type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` và header `Content-Disposition`; Quản lý bộ nhớ JVM khi tạo tài liệu Excel lớn (SXSSF vs XSSF) bằng Apache POI.
+- **Enterprise Dashboard & Role-based Portals (Phase 18)**: Thiết kế Single-Page Dashboard với cơ chế State Management đa góc nhìn (Admin vs Organizer); Tối ưu hiển thị dữ liệu lớn với client-side filtering; Tích hợp tải file nhị phân trực tiếp từ REST API thông qua Blob Object URL và trigger download an toàn.
