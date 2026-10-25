@@ -29,6 +29,8 @@ public interface EventService {
 
     EventResponse updateEvent(Long id, UpdateEventRequest request, String currentUsername, boolean isAdmin);
 
+    EventResponse updateEventStatus(Long id, EventStatus status, String currentUsername, boolean isAdmin);
+
     void deleteEvent(Long id, String currentUsername, boolean isAdmin);
 
     java.util.List<com.eventhub.dto.response.EventSeatResponse> getEventSeats(Long eventId);
@@ -37,6 +39,20 @@ public interface EventService {
             Long eventId,
             Long venueId,
             java.math.BigDecimal basePrice,
+            String currentUsername,
+            boolean isAdmin
+    );
+
+    java.util.List<com.eventhub.dto.response.EventSeatResponse> configureEventSeats(
+            Long eventId,
+            com.eventhub.dto.request.ConfigureEventSeatsRequest request,
+            String currentUsername,
+            boolean isAdmin
+    );
+
+    java.util.List<com.eventhub.dto.response.EventSeatResponse> batchUpdateEventSeats(
+            Long eventId,
+            com.eventhub.dto.request.BatchUpdateEventSeatsRequest request,
             String currentUsername,
             boolean isAdmin
     );

@@ -18,4 +18,8 @@ public interface TicketService {
     TicketResponse getTicketByCode(String ticketCode, String currentUsername, boolean isStaffOrAdmin);
 
     CheckInResponse checkInTicket(String ticketCode, String staffUsername);
+
+    CheckInResponse verifyTicket(String ticketCode, String staffUsername);
+
+    com.eventhub.dto.response.GateStatsResponse getGateStats(Long eventId);
 }

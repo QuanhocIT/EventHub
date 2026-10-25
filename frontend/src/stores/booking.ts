@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Event, EventSeat, TicketType, Coupon } from '@/types'
 import { bookingService } from '@/services/booking.service'
+import { seatHoldService } from '@/services/seatHold.service'
+import { useAuthStore } from './auth'
 
 export const useBookingStore = defineStore('booking', () => {
   const currentEvent = ref<Event | null>(null)
@@ -53,20 +55,59 @@ export const useBookingStore = defineStore('booking', () => {
 
   function setEvent(event: Event) {
     if (currentEvent.value?.id !== event.id) {
-      clearBooking()
+      clearBooking(false)
       currentEvent.value = event
     }
   }
 
-  function toggleSeat(seat: EventSeat) {
-    if (seat.status !== 'AVAILABLE') return
+  async function toggleSeat(seat: EventSeat) {
+    const authStore = useAuthStore()
     const idx = selectedSeats.value.findIndex((s) => s.id === seat.id)
+
     if (idx > -1) {
+      // Deselecting seat
+      if (authStore.isAuthenticated && currentEvent.value) {
+        try {
+          await seatHoldService.releaseSeats(currentEvent.value.id, [seat.id])
+        } catch (err) {
+          console.warn('Failed to release seat hold on server:', err)
+        }
+      }
       selectedSeats.value.splice(idx, 1)
+      if (selectedSeats.value.length === 0) {
+        isHolding.value = false
+        holdExpiresAt.value = null
+      }
     } else {
+      // Selecting seat
+      if (seat.status !== 'AVAILABLE') {
+        throw new Error(`Ghế ${seat.rowName || seat.seatRow}${seat.seatNumber} hiện không khả dụng!`)
+      }
       if (selectedSeats.value.length >= 6) {
         throw new Error('Bạn chỉ được chọn tối đa 6 ghế cho mỗi lượt đặt!')
       }
+
+      // If user is authenticated, immediately hold on backend with pessimistic lock & Redis TTL
+      if (authStore.isAuthenticated && currentEvent.value) {
+        try {
+          const holdRes = await seatHoldService.holdSeats(currentEvent.value.id, [seat.id])
+          isHolding.value = true
+          if (holdRes.expiresAt) {
+            holdExpiresAt.value = new Date(holdRes.expiresAt).getTime()
+          } else {
+            holdExpiresAt.value = Date.now() + 15 * 60 * 1000
+          }
+        } catch (err: any) {
+          const msg = err.response?.data?.message || err.message || 'Ghế này vừa được người khác giữ chỗ!'
+          throw new Error(msg)
+        }
+      } else {
+        // Fallback local hold
+        if (!isHolding.value) {
+          startHoldTimer(15)
+        }
+      }
+
       selectedSeats.value.push(seat)
     }
   }
@@ -107,7 +148,18 @@ export const useBookingStore = defineStore('booking', () => {
     holdExpiresAt.value = Date.now() + minutes * 60 * 1000
   }
 
-  function clearBooking() {
+  async function clearBooking(releaseServer = true) {
+    const authStore = useAuthStore()
+    if (releaseServer && authStore.isAuthenticated && currentEvent.value && selectedSeats.value.length > 0) {
+      try {
+        await seatHoldService.releaseSeats(
+          currentEvent.value.id,
+          selectedSeats.value.map((s) => s.id)
+        )
+      } catch (err) {
+        console.warn('Failed to release server holds on clearBooking:', err)
+      }
+    }
     selectedSeats.value = []
     selectedTicketQuantities.value = {}
     appliedCoupon.value = null

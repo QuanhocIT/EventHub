@@ -2,6 +2,8 @@ package com.eventhub.enums;
 
 public enum PaymentProvider {
     MOCK_SANDBOX,
+    VIETQR,
+    MOMO,
     VNPAY,
-    MOMO
+    CREDIT_CARD
 }

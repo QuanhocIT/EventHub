@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { cinemaService } from '@/services/cinema.service'
 import type { Movie, CinemaComplex } from '@/types/cinema'
@@ -15,9 +15,11 @@ import {
   Volume2,
   X,
   Ticket,
+  ChevronLeft,
   ChevronRight,
   Flame,
   Search,
+  Trophy,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -35,6 +37,64 @@ const trailerModalOpen = ref(false)
 const currentTrailerUrl = ref('')
 const currentTrailerTitle = ref('')
 
+// Top Spotlight Movies (Top 3-4 blockbusters)
+const selectedSpotlightIndex = ref(0)
+const isSpotlightPaused = ref(false)
+let spotlightInterval: any = null
+
+const topSpotlightMovies = computed(() => {
+  const combined = [...nowShowing.value, ...comingSoon.value]
+  const seen = new Set<string>()
+  const list: Movie[] = []
+  for (const m of combined) {
+    const key = m.slug || m.title
+    if (!seen.has(key)) {
+      seen.add(key)
+      list.push(m)
+    }
+  }
+  return list.slice(0, 4)
+})
+
+const featuredMovie = computed(() => {
+  if (topSpotlightMovies.value.length === 0) {
+    return nowShowing.value[0] || comingSoon.value[0] || null
+  }
+  const idx = selectedSpotlightIndex.value % topSpotlightMovies.value.length
+  return topSpotlightMovies.value[idx]
+})
+
+const selectTopMovie = (idx: number) => {
+  selectedSpotlightIndex.value = idx
+}
+
+const prevSpotlight = () => {
+  if (topSpotlightMovies.value.length === 0) return
+  selectedSpotlightIndex.value =
+    (selectedSpotlightIndex.value - 1 + topSpotlightMovies.value.length) % topSpotlightMovies.value.length
+}
+
+const nextSpotlight = () => {
+  if (topSpotlightMovies.value.length === 0) return
+  selectedSpotlightIndex.value = (selectedSpotlightIndex.value + 1) % topSpotlightMovies.value.length
+}
+
+const startSpotlightTimer = () => {
+  stopSpotlightTimer()
+  spotlightInterval = setInterval(() => {
+    if (!isSpotlightPaused.value && topSpotlightMovies.value.length > 1) {
+      selectedSpotlightIndex.value = (selectedSpotlightIndex.value + 1) % topSpotlightMovies.value.length
+    }
+  }, 6000)
+}
+
+const stopSpotlightTimer = () => {
+  if (spotlightInterval) {
+    clearInterval(spotlightInterval)
+    spotlightInterval = null
+  }
+}
+
 onMounted(async () => {
   try {
     const [nowRes, soonRes, complexRes] = await Promise.all([
@@ -45,11 +105,16 @@ onMounted(async () => {
     nowShowing.value = nowRes
     comingSoon.value = soonRes
     complexes.value = complexRes
+    startSpotlightTimer()
   } catch (error) {
     console.error('Error fetching cinema data:', error)
   } finally {
     loading.value = false
   }
+})
+
+onUnmounted(() => {
+  stopSpotlightTimer()
 })
 
 // Current movie list based on active tab
@@ -62,11 +127,6 @@ const currentMovies = computed(() => {
       m.genre.toLowerCase().includes(searchKeyword.value.toLowerCase())
     return matchSearch
   })
-})
-
-// Hero featured movie (first now showing movie or first available)
-const featuredMovie = computed(() => {
-  return nowShowing.value[0] || comingSoon.value[0] || null
 })
 
 // Filtered complexes by selected city
@@ -117,29 +177,58 @@ const getRatingColor = (code: string) => {
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-rose-500 selection:text-white">
-    <!-- Cinema Hero Spotlight Banner -->
+    <!-- Cinema Hero Spotlight Banner (Top 4 Blockbusters) -->
     <div
       v-if="featuredMovie"
-      class="relative overflow-hidden border-b border-slate-800 bg-slate-900 min-h-[440px] sm:min-h-[500px] flex items-center"
+      class="relative overflow-hidden border-b border-slate-800 bg-slate-950 py-8 lg:py-12 transition-all duration-700"
+      @mouseenter="isSpotlightPaused = true"
+      @mouseleave="isSpotlightPaused = false"
     >
       <!-- Background Backdrop with Gradient Overlays -->
-      <div class="absolute inset-0 z-0">
+      <div class="absolute inset-0 z-0 overflow-hidden">
         <img
+          :key="featuredMovie.id"
           :src="featuredMovie.bannerUrl || featuredMovie.posterUrl"
           :alt="featuredMovie.title"
           class="w-full h-full object-cover object-center opacity-30 filter blur-xs scale-105 transform duration-1000"
         />
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
       </div>
 
-      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          <!-- Text Info -->
-          <div class="md:col-span-7 lg:col-span-8 space-y-4">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-black tracking-wide uppercase">
-              <Flame class="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-              <span>Bom Tấn Chiếu Rạp Tâm Điểm Tuần Này</span>
+      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <!-- Main Spotlight Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <!-- Text Info (lg:col-span-8) -->
+          <div class="lg:col-span-8 space-y-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-black tracking-wide uppercase">
+                <Flame class="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                <span>TOP #{{ selectedSpotlightIndex + 1 }} BOM TẤN CHIẾU RẠP TÂM ĐIỂM</span>
+              </div>
+
+              <!-- Mini Carousel Arrow Navigation -->
+              <div v-if="topSpotlightMovies.length > 1" class="flex items-center gap-1.5 ml-auto sm:ml-0 bg-slate-900/90 border border-slate-800 rounded-lg p-1">
+                <button
+                  type="button"
+                  @click="prevSpotlight"
+                  class="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="Phim trước"
+                >
+                  <ChevronLeft class="w-4 h-4" />
+                </button>
+                <span class="text-xs font-mono font-bold px-1.5 text-slate-400">
+                  {{ selectedSpotlightIndex + 1 }} / {{ topSpotlightMovies.length }}
+                </span>
+                <button
+                  type="button"
+                  @click="nextSpotlight"
+                  class="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="Phim tiếp theo"
+                >
+                  <ChevronRight class="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
@@ -170,7 +259,7 @@ const getRatingColor = (code: string) => {
               </span>
             </div>
 
-            <p class="text-sm sm:text-base text-slate-300 line-clamp-3 max-w-2xl leading-relaxed">
+            <p class="text-sm sm:text-base text-slate-300 line-clamp-2 max-w-2xl leading-relaxed">
               {{ featuredMovie.description }}
             </p>
 
@@ -200,8 +289,8 @@ const getRatingColor = (code: string) => {
             </div>
           </div>
 
-          <!-- Featured Poster Card -->
-          <div class="hidden md:flex md:col-span-5 lg:col-span-4 justify-center">
+          <!-- Featured Poster Card (lg:col-span-4) -->
+          <div class="hidden lg:flex lg:col-span-4 justify-end">
             <div class="relative group cursor-pointer" @click="router.push(`/movies/${featuredMovie.slug || featuredMovie.id}`)">
               <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 opacity-40 blur group-hover:opacity-75 transition duration-500"></div>
               <img
@@ -209,8 +298,84 @@ const getRatingColor = (code: string) => {
                 :alt="featuredMovie.title"
                 class="relative w-64 lg:w-72 rounded-2xl shadow-2xl object-cover aspect-[2/3] border border-slate-800 transform group-hover:scale-[1.02] transition duration-300"
               />
-              <div class="absolute top-3 right-3 px-2 py-1 rounded bg-black/70 backdrop-blur-xs text-[10px] font-black uppercase text-rose-400 border border-rose-500/30">
-                IMAX Laser
+              <div class="absolute top-3 right-3 px-2 py-1 rounded bg-black/80 backdrop-blur-xs text-[10px] font-black uppercase text-rose-400 border border-rose-500/30">
+                {{ featuredMovie.formatDisplay?.split(',')[0] || 'IMAX Laser' }}
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-xs text-xs font-bold text-slate-200 border border-slate-800 flex items-center justify-between">
+                <span>Top #{{ selectedSpotlightIndex + 1 }} Thịnh Hành</span>
+                <span class="text-rose-400 text-[11px] font-semibold">Xem chi tiết &rarr;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top 4 Movies Selector Strip -->
+        <div v-if="topSpotlightMovies.length > 1" class="mt-8 pt-6 border-t border-slate-800/80">
+          <div class="flex items-center justify-between mb-3.5">
+            <div class="flex items-center gap-2">
+              <Trophy class="w-4 h-4 text-amber-400" />
+              <span class="text-xs uppercase font-extrabold tracking-wider text-slate-300">
+                Top {{ topSpotlightMovies.length }} Bom Tấn Dẫn Đầu Phòng Vé - Bấm để chọn xem
+              </span>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <span class="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+              <span>Tự động chuyển tiếp sau 6s</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div
+              v-for="(movie, idx) in topSpotlightMovies"
+              :key="movie.id"
+              @click="selectTopMovie(idx)"
+              class="group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-300 border backdrop-blur-xs"
+              :class="[
+                selectedSpotlightIndex === idx
+                  ? 'bg-slate-900/90 border-rose-500 shadow-lg shadow-rose-500/25 ring-1 ring-rose-500/50 -translate-y-1'
+                  : 'bg-slate-950/70 border-slate-800 hover:bg-slate-900/70 hover:border-slate-700'
+              ]"
+            >
+              <!-- Rank Number Badge -->
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black shrink-0 shadow-sm"
+                :class="[
+                  idx === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 ring-1 ring-amber-300' :
+                  idx === 1 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-950' :
+                  idx === 2 ? 'bg-gradient-to-br from-amber-700 to-amber-900 text-white' :
+                  'bg-gradient-to-br from-indigo-600 to-blue-700 text-white'
+                ]"
+              >
+                #{{ idx + 1 }}
+              </div>
+
+              <!-- Poster Thumbnail -->
+              <img
+                :src="movie.posterUrl"
+                :alt="movie.title"
+                class="w-12 h-16 rounded-md object-cover shrink-0 border border-slate-800 group-hover:scale-105 transition-transform"
+              />
+
+              <!-- Info -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between text-[11px] mb-0.5">
+                  <span class="flex items-center gap-1 text-amber-400 font-bold">
+                    <Star class="w-3 h-3 fill-amber-400 shrink-0" />
+                    {{ movie.imdbRating || '8.8' }}
+                  </span>
+                  <span
+                    v-if="selectedSpotlightIndex === idx"
+                    class="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-wider"
+                  >
+                    Đang xem
+                  </span>
+                </div>
+                <h4 class="text-xs font-bold text-white truncate group-hover:text-rose-400 transition-colors">
+                  {{ movie.title }}
+                </h4>
+                <p class="text-[10px] text-slate-400 truncate mt-0.5">
+                  {{ movie.formatDisplay?.split(',')[0] || movie.genre }}
+                </p>
               </div>
             </div>
           </div>

@@ -10,12 +10,31 @@ import DashboardView from '@/views/DashboardView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import CinemaView from '@/views/CinemaView.vue'
 import MovieDetailView from '@/views/MovieDetailView.vue'
+import PromotionsView from '@/views/PromotionsView.vue'
+import NewsView from '@/views/NewsView.vue'
+import AboutView from '@/views/AboutView.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
     component: HomeView,
+  },
+  {
+    path: '/promotions',
+    alias: '/vouchers',
+    name: 'promotions',
+    component: PromotionsView,
+  },
+  {
+    path: '/news',
+    name: 'news',
+    component: NewsView,
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: AboutView,
   },
   {
     path: '/events',
@@ -32,6 +51,18 @@ const routes: RouteRecordRaw[] = [
     alias: '/movies',
     name: 'cinema',
     component: CinemaView,
+  },
+  {
+    path: '/cinemas',
+    alias: ['/theaters', '/rap-chieu'],
+    name: 'cinemas',
+    component: () => import('@/views/CinemasView.vue'),
+  },
+  {
+    path: '/cinemas/:id',
+    alias: ['/theaters/:id'],
+    name: 'cinema-detail',
+    component: () => import('@/views/CinemaDetailView.vue'),
   },
   {
     path: '/movies/:id',
@@ -70,10 +101,28 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/staff',
-    redirect: '/dashboard?tab=staff_scanner',
+    redirect: '/staff/scanner',
     meta: {
       requiresAuth: true,
       roles: ['ROLE_STAFF', 'ROLE_ADMIN', 'ROLE_ORGANIZER'],
+    },
+  },
+  {
+    path: '/staff/scanner',
+    name: 'staff-scanner',
+    component: () => import('@/views/StaffScannerView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['ROLE_STAFF', 'ROLE_ADMIN', 'ROLE_ORGANIZER'],
+    },
+  },
+  {
+    path: '/organizer/seat-map-builder',
+    name: 'seat-map-builder',
+    component: () => import('@/views/SeatMapBuilderView.vue'),
+    meta: {
+      requiresAuth: true,
+      roles: ['ROLE_ORGANIZER', 'ROLE_ADMIN'],
     },
   },
   {

@@ -1,128 +1,134 @@
 <script setup lang="ts">
-import { Ticket, ShieldCheck, Zap, Headphones, Heart, Phone, Mail, MapPin } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { Play, ArrowRight, ArrowUp, Send } from 'lucide-vue-next'
+
+const emailInput = ref('')
+const subscribed = ref(false)
+
+const handleSubscribe = () => {
+  if (emailInput.value.trim()) {
+    subscribed.value = true
+    setTimeout(() => {
+      subscribed.value = false
+      emailInput.value = ''
+    }, 3000)
+  }
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <template>
-  <footer class="border-t border-slate-200 bg-white mt-20 text-slate-600">
-    <!-- Top Highlights Bar -->
-    <div class="border-b border-slate-100 py-10 bg-slate-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-              <Zap class="w-6 h-6" />
-            </div>
-            <div>
-              <h4 class="font-bold text-slate-900 text-base">Khóa Ghế Thời Gian Thực</h4>
-              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                Tích hợp Redis Distributed Lock & Pessimistic Write Lock cam kết không xảy ra tranh chấp hoặc bán quá số vé.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-              <ShieldCheck class="w-6 h-6" />
-            </div>
-            <div>
-              <h4 class="font-bold text-slate-900 text-base">Vé QR Bảo Mật Anti-Passback</h4>
-              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                Mã hóa Token QR dùng 1 lần, chống chụp màn hình bán lại hoặc quay vòng vé tại cổng check-in.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              <Headphones class="w-6 h-6" />
-            </div>
-            <div>
-              <h4 class="font-bold text-slate-900 text-base">Hỗ Trợ Khách Hàng 24/7</h4>
-              <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                Tổng đài trực tuyến sẵn sàng giải quyết thắc mắc về đơn hàng, đổi thông tin và hỗ trợ vào cổng.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Footer Links -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <!-- Col 1: Brand & Contact -->
-        <div class="space-y-4">
+  <footer id="about" class="border-t border-[#1A2338] bg-[#070A12] text-slate-400 pt-16 pb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <!-- Top Grid: 4 Columns -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10">
+        <!-- Col 1: Brand Info (2 cols on large) -->
+        <div class="lg:col-span-2 space-y-4">
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
-              <Ticket class="w-5 h-5" />
+            <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
+              <Play class="w-4 h-4 fill-white ml-0.5" />
             </div>
-            <span class="text-xl font-black text-slate-900">Event<span class="text-indigo-600">Hub</span></span>
+            <div class="flex flex-col">
+              <span class="text-lg font-black text-white leading-tight">
+                Cine<span class="text-blue-500">Verse</span>
+              </span>
+              <span class="text-[9px] font-bold text-slate-500 tracking-wider uppercase">
+                Movies • Events • More
+              </span>
+            </div>
           </div>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            Hệ thống bán vé sự kiện và quản lý check-in điện tử hàng đầu Việt Nam, phục vụ hàng triệu khán giả và ban tổ chức.
+          <p class="text-xs text-slate-400 leading-relaxed max-w-sm">
+            Nền tảng đặt vé xem phim chiếu rạp và sự kiện giải trí trực tuyến hàng đầu Việt Nam. Kết nối hàng triệu khán giả với trải nghiệm điện ảnh đỉnh cao và concert bùng nổ.
           </p>
-          <div class="space-y-1.5 text-xs text-slate-500">
-            <div class="flex items-center gap-2">
-              <Phone class="w-3.5 h-3.5 text-indigo-600" />
-              <span>Hotline CSKH: 1900 6868</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <Mail class="w-3.5 h-3.5 text-indigo-600" />
-              <span>Email: support@eventhub.vn</span>
-            </div>
-          </div>
+          <p class="text-xs text-slate-500">
+            Hotline: <strong class="text-slate-300">1900 6868</strong> • Email: <strong class="text-slate-300">support@cineverse.vn</strong>
+          </p>
         </div>
 
-        <!-- Col 2: Categories -->
-        <div>
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Danh Mục Sự Kiện</h4>
-          <ul class="space-y-2.5 text-xs text-slate-600">
-            <li><router-link to="/events?categoryId=1" class="hover:text-indigo-600 transition-colors">Âm Nhạc & Concerts</router-link></li>
-            <li><router-link to="/events?categoryId=2" class="hover:text-indigo-600 transition-colors">Hội Thảo & Tech Summit</router-link></li>
-            <li><router-link to="/events?categoryId=3" class="hover:text-indigo-600 transition-colors">Thể Thao & Giải Chạy</router-link></li>
-            <li><router-link to="/events?categoryId=4" class="hover:text-indigo-600 transition-colors">Sân Khấu & Nhạc Kịch</router-link></li>
-            <li><router-link to="/events?categoryId=5" class="hover:text-indigo-600 transition-colors">Lễ Hội Văn Hóa</router-link></li>
+        <!-- Col 2: Về CineVerse -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider">Khám Phá CineVerse</h4>
+          <ul class="space-y-2 text-xs text-slate-400">
+            <li><router-link to="/about" class="hover:text-blue-400 transition-colors">Về chúng tôi & Sứ mệnh</router-link></li>
+            <li><router-link to="/promotions" class="hover:text-blue-400 transition-colors">Kho ưu đãi & Mã giảm giá</router-link></li>
+            <li><router-link to="/news" class="hover:text-blue-400 transition-colors">Tin tức điện ảnh & Sự kiện</router-link></li>
+            <li><router-link to="/cinema" class="hover:text-blue-400 transition-colors">Lịch chiếu rạp toàn quốc</router-link></li>
           </ul>
         </div>
 
-        <!-- Col 3: Customer Service -->
-        <div>
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Khách Hàng</h4>
-          <ul class="space-y-2.5 text-xs text-slate-600">
-            <li><router-link to="/events" class="hover:text-indigo-600 transition-colors">Tìm kiếm sự kiện</router-link></li>
-            <li><router-link to="/my-tickets" class="hover:text-indigo-600 transition-colors">Quản lý vé đã mua</router-link></li>
-            <li><router-link to="/login" class="hover:text-indigo-600 transition-colors">Đăng nhập tài khoản</router-link></li>
-            <li><router-link to="/register" class="hover:text-indigo-600 transition-colors">Đăng ký thành viên</router-link></li>
-            <li><a href="http://localhost:8080/swagger-ui.html" target="_blank" class="hover:text-indigo-600 transition-colors">Tài liệu API Swagger ↗</a></li>
+        <!-- Col 3: Hỗ trợ khách hàng -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider">Hỗ Trợ Khách Hàng</h4>
+          <ul class="space-y-2 text-xs text-slate-400">
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Câu hỏi thường gặp</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Chính sách bảo mật</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Điều khoản sử dụng</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Chính sách đổi trả & hoàn tiền</a></li>
           </ul>
         </div>
 
-        <!-- Col 4: Payments & Tech -->
-        <div>
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Phương Thức Thanh Toán</h4>
-          <p class="text-[11px] text-slate-500 mb-3">Hỗ trợ đa dạng cổng thanh toán an toàn:</p>
-          <div class="flex flex-wrap gap-2 text-[11px] font-bold text-slate-700">
-            <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200">Visa / Master</span>
-            <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200">MoMo</span>
-            <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200">VNPay QR</span>
-            <span class="px-2 py-1 rounded bg-slate-100 border border-slate-200">ZaloPay</span>
+        <!-- Col 4: Kết nối & Đăng ký nhận tin -->
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Kết Nối Với Chúng Tôi</h4>
+            <div class="flex items-center gap-2">
+              <a href="#" class="w-8 h-8 rounded-full bg-[#111827] border border-[#1E293D] flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500 hover:bg-blue-600 transition">f</a>
+              <a href="#" class="w-8 h-8 rounded-full bg-[#111827] border border-[#1E293D] flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500 hover:bg-blue-600 transition">ig</a>
+              <a href="#" class="w-8 h-8 rounded-full bg-[#111827] border border-[#1E293D] flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500 hover:bg-blue-600 transition">yt</a>
+              <a href="#" class="w-8 h-8 rounded-full bg-[#111827] border border-[#1E293D] flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500 hover:bg-blue-600 transition">tt</a>
+              <a href="#" class="w-8 h-8 rounded-full bg-[#111827] border border-[#1E293D] flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500 hover:bg-blue-600 transition">zl</a>
+            </div>
           </div>
 
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mt-6 mb-2">Hạ Tầng Backend</h4>
-          <div class="flex flex-wrap gap-1.5 text-[10px] font-medium text-slate-600">
-            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">Java 21</span>
-            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">Spring Boot 3</span>
-            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">Redis 7</span>
-            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">MySQL 8.4</span>
+          <!-- Subscribe newsletter -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Đăng Ký Nhận Tin</h4>
+            <p class="text-[11px] text-slate-500">Nhận thông tin khuyến mãi, suất chiếu sớm & sự kiện mới nhất</p>
+            <form @submit.prevent="handleSubscribe" class="flex items-center gap-2">
+              <input
+                v-model="emailInput"
+                type="email"
+                placeholder="Nhập email của bạn..."
+                class="flex-1 px-3 py-2 rounded-xl bg-[#111827] border border-[#1E293D] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition flex items-center justify-center shrink-0 cursor-pointer shadow-md shadow-blue-600/30"
+              >
+                <Send class="w-3.5 h-3.5" />
+              </button>
+            </form>
+            <p v-if="subscribed" class="text-[11px] text-emerald-400 font-bold">
+              ✓ Đã đăng ký nhận tin thành công!
+            </p>
           </div>
         </div>
       </div>
 
-      <div class="border-t border-slate-200 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-        <p>© 2026 EventHub Inc. Mọi quyền được bảo lưu. Giấy phép sàn thương mại điện tử số 03189921.</p>
-        <p class="flex items-center gap-1">
-          Thiết kế với <Heart class="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> bởi đội ngũ EventHub Việt Nam
-        </p>
+      <!-- Bottom Bar matching Image 2 -->
+      <div class="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div class="flex flex-wrap items-center gap-5 sm:gap-6">
+          <router-link to="/about" class="text-slate-400 hover:text-blue-400 transition-colors">Về chúng tôi</router-link>
+          <a href="#" class="text-slate-400 hover:text-blue-400 transition-colors">Điều khoản sử dụng</a>
+          <a href="#" class="text-slate-400 hover:text-blue-400 transition-colors">Chính sách bảo mật</a>
+          <a href="#" class="text-slate-400 hover:text-blue-400 transition-colors">Liên hệ</a>
+        </div>
+
+        <div class="flex items-center gap-6">
+          <p class="text-slate-500">© 2026 CineVerse & EventHub. All rights reserved.</p>
+          <!-- Back to top button -->
+          <button
+            type="button"
+            @click="scrollToTop"
+            class="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 font-bold transition cursor-pointer"
+          >
+            <span>Lên đầu trang</span>
+            <ArrowUp class="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   </footer>

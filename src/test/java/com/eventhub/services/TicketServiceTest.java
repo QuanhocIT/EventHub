@@ -15,7 +15,9 @@ import com.eventhub.enums.TicketStatus;
 import com.eventhub.enums.UserRole;
 import com.eventhub.exceptions.BadRequestException;
 import com.eventhub.exceptions.ForbiddenException;
+import com.eventhub.repositories.EventRepository;
 import com.eventhub.repositories.TicketRepository;
+import com.eventhub.repositories.TicketTypeRepository;
 import com.eventhub.repositories.UserRepository;
 import com.eventhub.services.impl.TicketServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,12 @@ class TicketServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private EventRepository eventRepository;
+
+    @Mock
+    private TicketTypeRepository ticketTypeRepository;
 
     @Mock
     private QrCodeService qrCodeService;
@@ -185,5 +193,43 @@ class TicketServiceTest {
         assertThatThrownBy(() -> ticketService.checkInTicket("TK-20261021-AAAA1111", "bob_staff"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("already used for check-in");
+    }
+
+    @Test
+    @DisplayName("Should verify valid ticket without modifying status")
+    void verifyTicket_Valid() {
+        when(ticketRepository.findByTicketCode("TK-20261021-AAAA1111")).thenReturn(Optional.of(ticket));
+
+        CheckInResponse response = ticketService.verifyTicket("TK-20261021-AAAA1111", "bob_staff");
+
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getStatus()).isEqualTo("VALID");
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.VALID);
+    }
+
+    @Test
+    @DisplayName("Should return gate stats with tier breakdowns and recent check-ins")
+    void getGateStats_Success() {
+        TicketType ticketType = TicketType.builder().id(22L).name("VIP Pass").build();
+        when(eventRepository.findById(10L)).thenReturn(Optional.of(event));
+        when(ticketRepository.countByEventId(10L)).thenReturn(100L);
+        when(ticketRepository.countByEventIdAndStatus(10L, TicketStatus.USED)).thenReturn(40L);
+        when(ticketTypeRepository.findByEventId(10L)).thenReturn(List.of(ticketType));
+        when(ticketRepository.countByEventIdAndTicketTypeId(10L, 22L)).thenReturn(50L);
+        when(ticketRepository.countByEventIdAndTicketTypeIdAndStatus(10L, 22L, TicketStatus.USED)).thenReturn(25L);
+        when(ticketRepository.findTop20ByEventIdAndStatusOrderByCheckedInAtDesc(10L, TicketStatus.USED))
+                .thenReturn(List.of(ticket));
+
+        com.eventhub.dto.response.GateStatsResponse stats = ticketService.getGateStats(10L);
+
+        assertThat(stats.getEventId()).isEqualTo(10L);
+        assertThat(stats.getTotalTickets()).isEqualTo(100L);
+        assertThat(stats.getCheckedInCount()).isEqualTo(40L);
+        assertThat(stats.getRemainingCount()).isEqualTo(60L);
+        assertThat(stats.getCheckInRatePercent()).isEqualTo(40.0);
+        assertThat(stats.getTierStats()).hasSize(1);
+        assertThat(stats.getTierStats().get(0).getTicketTypeName()).isEqualTo("VIP Pass");
+        assertThat(stats.getTierStats().get(0).getCheckInRatePercent()).isEqualTo(50.0);
+        assertThat(stats.getRecentCheckIns()).hasSize(1);
     }
 }

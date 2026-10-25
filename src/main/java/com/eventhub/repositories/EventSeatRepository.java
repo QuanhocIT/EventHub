@@ -25,6 +25,8 @@ public interface EventSeatRepository extends JpaRepository<EventSeat, Long> {
 
     Optional<EventSeat> findByEventIdAndSeatId(Long eventId, Long seatId);
 
+    List<EventSeat> findByStatusAndHeldExpiresAtBefore(EventSeatStatus status, java.time.LocalDateTime dateTime);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT es FROM EventSeat es WHERE es.id = :id")
     Optional<EventSeat> findByIdWithLock(@Param("id") Long id);

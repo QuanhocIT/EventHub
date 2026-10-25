@@ -23,6 +23,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.eventhub.aspect.Auditable;
 
 @RestController
 @RequestMapping("/api/v1/events")
@@ -104,6 +106,22 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.success("Event updated successfully", updatedEvent));
     }
 
+    @Operation(summary = "Update event status (Publish, Draft, Cancel)", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Auditable(action = "EVENT_STATUS_UPDATE", entityType = "Event")
+    public ResponseEntity<ApiResponse<EventResponse>> updateEventStatus(
+            @PathVariable Long id,
+            @RequestParam EventStatus status,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        EventResponse updatedEvent = eventService.updateEventStatus(id, status, currentUsername, isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Event status updated successfully", updatedEvent));
+    }
+
     @Operation(summary = "Delete an event by ID", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
@@ -140,5 +158,37 @@ public class EventController {
         java.util.List<com.eventhub.dto.response.EventSeatResponse> seats =
                 eventService.assignVenueToEvent(id, venueId, basePrice, currentUsername, isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Venue assigned and seats generated successfully", seats));
+    }
+
+    @Operation(summary = "Configure visual seat map layout and pricing for an event", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
+    @PostMapping("/{id}/seat-map")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<java.util.List<com.eventhub.dto.response.EventSeatResponse>>> configureSeatMap(
+            @PathVariable Long id,
+            @Valid @RequestBody com.eventhub.dto.request.ConfigureEventSeatsRequest request,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        java.util.List<com.eventhub.dto.response.EventSeatResponse> seats =
+                eventService.configureEventSeats(id, request, currentUsername, isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Event seat map configured successfully", seats));
+    }
+
+    @Operation(summary = "Batch update event seats (price, status, zone)", description = "Requires Owner or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
+    @PutMapping("/{id}/seats/batch-update")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<java.util.List<com.eventhub.dto.response.EventSeatResponse>>> batchUpdateSeats(
+            @PathVariable Long id,
+            @Valid @RequestBody com.eventhub.dto.request.BatchUpdateEventSeatsRequest request,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(UserRole.ROLE_ADMIN.name()));
+        java.util.List<com.eventhub.dto.response.EventSeatResponse> seats =
+                eventService.batchUpdateEventSeats(id, request, currentUsername, isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Event seats updated successfully", seats));
     }
 }

@@ -69,6 +69,9 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_url", length = 500)
     private String paymentUrl;
 
+    @Column(name = "qr_code_url", length = 500)
+    private String qrCodeUrl;
+
     @Column(name = "error_message", length = 500)
     private String errorMessage;
 }

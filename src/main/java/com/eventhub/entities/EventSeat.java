@@ -52,4 +52,10 @@ public class EventSeat extends BaseEntity {
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal price;
+
+    @Column(name = "held_by_username", length = 50)
+    private String heldByUsername;
+
+    @Column(name = "held_expires_at")
+    private java.time.LocalDateTime heldExpiresAt;
 }

@@ -10,7 +10,13 @@ import com.eventhub.enums.TicketStatus;
 import com.eventhub.exceptions.BadRequestException;
 import com.eventhub.exceptions.ForbiddenException;
 import com.eventhub.exceptions.ResourceNotFoundException;
+import com.eventhub.dto.response.GateStatsResponse;
+import com.eventhub.dto.response.GateTierStatResponse;
+import com.eventhub.entities.Event;
+import com.eventhub.entities.TicketType;
+import com.eventhub.repositories.EventRepository;
 import com.eventhub.repositories.TicketRepository;
+import com.eventhub.repositories.TicketTypeRepository;
 import com.eventhub.repositories.UserRepository;
 import com.eventhub.services.QrCodeService;
 import com.eventhub.services.TicketService;
@@ -27,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,6 +42,8 @@ public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final EventRepository eventRepository;
+    private final TicketTypeRepository ticketTypeRepository;
     private final QrCodeService qrCodeService;
 
     @Override
@@ -111,7 +120,8 @@ public class TicketServiceImpl implements TicketService {
         if (ticket.getStatus() == TicketStatus.USED) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
             String checkInStr = ticket.getCheckedInAt() != null ? ticket.getCheckedInAt().format(formatter) : "earlier";
-            throw new BadRequestException(String.format("Ticket %s was already used for check-in at %s", ticketCode, checkInStr));
+            String staff = ticket.getCheckedInBy() != null ? ticket.getCheckedInBy().getFullName() : "nhân viên";
+            throw new BadRequestException(String.format("Cảnh báo Anti-Passback: Ticket %s was already used for check-in at %s bởi %s. Từ chối vào cổng!", ticketCode, checkInStr, staff));
         }
 
         if (ticket.getStatus() == TicketStatus.CANCELLED) {
@@ -138,11 +148,128 @@ public class TicketServiceImpl implements TicketService {
                 .message("Check-in successful. Welcome to the event!")
                 .ticketCode(updated.getTicketCode())
                 .attendeeName(updated.getBooking().getUser().getFullName())
+                .attendeeEmail(updated.getBooking().getUser().getEmail())
+                .attendeePhone(updated.getBooking().getUser().getPhoneNumber())
+                .eventId(updated.getEvent().getId())
                 .eventTitle(updated.getEvent().getTitle())
                 .seatInfo(seatInfo)
                 .ticketTypeName(updated.getTicketType() != null ? updated.getTicketType().getName() : "General Admission")
                 .checkInTime(updated.getCheckedInAt())
                 .staffUsername(staffUsername)
+                .bookingCode(updated.getBooking().getBookingCode())
+                .status(updated.getStatus().name())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CheckInResponse verifyTicket(String ticketCode, String staffUsername) {
+        log.info("Verifying ticket code: {} by staff: {}", ticketCode, staffUsername);
+
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "code", ticketCode));
+
+        String seatInfo = null;
+        if (ticket.getEventSeat() != null && ticket.getEventSeat().getSeat() != null) {
+            seatInfo = String.format("Row %s - Seat %s (%s)",
+                    ticket.getEventSeat().getSeat().getSeatRow(),
+                    ticket.getEventSeat().getSeat().getSeatNumber(),
+                    ticket.getEventSeat().getSeat().getZone());
+        }
+
+        boolean isValid = ticket.getStatus() == TicketStatus.VALID;
+        String message = isValid
+                ? "Vé hợp lệ, sẵn sàng soát vé"
+                : (ticket.getStatus() == TicketStatus.USED
+                    ? "Vé đã qua sử dụng (Cảnh báo Anti-Passback)"
+                    : "Vé không hợp lệ hoặc đã bị huỷ");
+
+        return CheckInResponse.builder()
+                .success(isValid)
+                .message(message)
+                .ticketCode(ticket.getTicketCode())
+                .attendeeName(ticket.getBooking().getUser().getFullName())
+                .attendeeEmail(ticket.getBooking().getUser().getEmail())
+                .attendeePhone(ticket.getBooking().getUser().getPhoneNumber())
+                .eventId(ticket.getEvent().getId())
+                .eventTitle(ticket.getEvent().getTitle())
+                .seatInfo(seatInfo)
+                .ticketTypeName(ticket.getTicketType() != null ? ticket.getTicketType().getName() : "General Admission")
+                .checkInTime(ticket.getCheckedInAt())
+                .staffUsername(ticket.getCheckedInBy() != null ? ticket.getCheckedInBy().getUsername() : null)
+                .bookingCode(ticket.getBooking().getBookingCode())
+                .status(ticket.getStatus().name())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GateStatsResponse getGateStats(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+
+        long totalTickets = ticketRepository.countByEventId(eventId);
+        long checkedInCount = ticketRepository.countByEventIdAndStatus(eventId, TicketStatus.USED);
+        long remainingCount = Math.max(0, totalTickets - checkedInCount);
+        double checkInRate = totalTickets > 0 ? (double) checkedInCount * 100.0 / totalTickets : 0.0;
+        checkInRate = Math.round(checkInRate * 10.0) / 10.0;
+
+        List<TicketType> ticketTypes = ticketTypeRepository.findByEventId(eventId);
+        List<GateTierStatResponse> tierStats = ticketTypes.stream().map(tt -> {
+            long tierTotal = ticketRepository.countByEventIdAndTicketTypeId(eventId, tt.getId());
+            long tierCheckedIn = ticketRepository.countByEventIdAndTicketTypeIdAndStatus(eventId, tt.getId(), TicketStatus.USED);
+            long tierRemaining = Math.max(0, tierTotal - tierCheckedIn);
+            double tierRate = tierTotal > 0 ? (double) tierCheckedIn * 100.0 / tierTotal : 0.0;
+            tierRate = Math.round(tierRate * 10.0) / 10.0;
+
+            return GateTierStatResponse.builder()
+                    .ticketTypeId(tt.getId())
+                    .ticketTypeName(tt.getName())
+                    .totalCount(tierTotal)
+                    .checkedInCount(tierCheckedIn)
+                    .remainingCount(tierRemaining)
+                    .checkInRatePercent(tierRate)
+                    .build();
+        }).collect(Collectors.toList());
+
+        List<Ticket> recentTickets = ticketRepository.findTop20ByEventIdAndStatusOrderByCheckedInAtDesc(eventId, TicketStatus.USED);
+        List<CheckInResponse> recentCheckIns = recentTickets.stream().map(t -> {
+            String seatInfo = null;
+            if (t.getEventSeat() != null && t.getEventSeat().getSeat() != null) {
+                seatInfo = String.format("Row %s - Seat %s (%s)",
+                        t.getEventSeat().getSeat().getSeatRow(),
+                        t.getEventSeat().getSeat().getSeatNumber(),
+                        t.getEventSeat().getSeat().getZone());
+            }
+            return CheckInResponse.builder()
+                    .success(true)
+                    .message("Checked in")
+                    .ticketCode(t.getTicketCode())
+                    .attendeeName(t.getBooking().getUser().getFullName())
+                    .attendeeEmail(t.getBooking().getUser().getEmail())
+                    .attendeePhone(t.getBooking().getUser().getPhoneNumber())
+                    .eventId(eventId)
+                    .eventTitle(event.getTitle())
+                    .seatInfo(seatInfo)
+                    .ticketTypeName(t.getTicketType() != null ? t.getTicketType().getName() : "General Admission")
+                    .checkInTime(t.getCheckedInAt())
+                    .staffUsername(t.getCheckedInBy() != null ? t.getCheckedInBy().getUsername() : null)
+                    .bookingCode(t.getBooking().getBookingCode())
+                    .status(t.getStatus().name())
+                    .build();
+        }).collect(Collectors.toList());
+
+        return GateStatsResponse.builder()
+                .eventId(event.getId())
+                .eventTitle(event.getTitle())
+                .eventStartTime(event.getStartTime())
+                .location(event.getLocation())
+                .totalTickets(totalTickets)
+                .checkedInCount(checkedInCount)
+                .remainingCount(remainingCount)
+                .checkInRatePercent(checkInRate)
+                .tierStats(tierStats)
+                .recentCheckIns(recentCheckIns)
                 .build();
     }
 

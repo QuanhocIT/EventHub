@@ -1,5 +1,6 @@
 package com.eventhub.services.impl;
 
+import com.eventhub.dto.request.ConfigureVenueLayoutRequest;
 import com.eventhub.dto.request.CreateVenueRequest;
 import com.eventhub.dto.response.VenueResponse;
 import com.eventhub.entities.Seat;
@@ -101,6 +102,37 @@ public class VenueServiceImpl implements VenueService {
                 .orElseThrow(() -> new ResourceNotFoundException("Venue", "id", id));
         venueRepository.delete(venue);
         log.info("Venue deleted with ID: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public VenueResponse configureVenueLayout(Long id, ConfigureVenueLayoutRequest request) {
+        Venue venue = venueRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Venue", "id", id));
+
+        log.info("Configuring custom visual seating layout for venue ID: {}, total seats: {}", id, request.getSeats().size());
+
+        List<Seat> existing = seatRepository.findByVenueIdOrderBySeatRowAscSeatNumberAsc(id);
+        if (!existing.isEmpty()) {
+            seatRepository.deleteAll(existing);
+            seatRepository.flush();
+        }
+
+        List<Seat> newSeats = request.getSeats().stream()
+                .map(item -> Seat.builder()
+                        .venue(venue)
+                        .seatRow(item.getSeatRow().trim().toUpperCase())
+                        .seatNumber(item.getSeatNumber())
+                        .zone(item.getZone() != null ? item.getZone() : SeatZone.STANDARD)
+                        .build())
+                .collect(Collectors.toList());
+
+        seatRepository.saveAll(newSeats);
+        venue.setCapacity(newSeats.size());
+        Venue updated = venueRepository.save(venue);
+
+        log.info("Successfully updated venue ID: {} layout with {} seats", id, newSeats.size());
+        return mapToResponse(updated, newSeats.size());
     }
 
     private VenueResponse mapToResponse(Venue venue, int totalSeats) {

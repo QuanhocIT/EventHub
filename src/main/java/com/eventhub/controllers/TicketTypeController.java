@@ -12,12 +12,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.eventhub.dto.request.UpdateTicketTypeRequest;
 
 import java.security.Principal;
 import java.util.List;
@@ -62,5 +65,38 @@ public class TicketTypeController {
     ) {
         TicketTypeResponse response = ticketTypeService.getTicketTypeById(eventId, ticketTypeId);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Update an existing ticket type (Organizer or Admin)")
+    @PutMapping("/{ticketTypeId}")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<TicketTypeResponse>> updateTicketType(
+            @PathVariable Long eventId,
+            @PathVariable Long ticketTypeId,
+            @Valid @RequestBody UpdateTicketTypeRequest request,
+            Principal principal,
+            Authentication authentication
+    ) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        TicketTypeResponse response = ticketTypeService.updateTicketType(eventId, ticketTypeId, request, principal.getName(), isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Ticket type updated successfully", response));
+    }
+
+    @Operation(summary = "Delete or deactivate a ticket type (Organizer or Admin)")
+    @DeleteMapping("/{ticketTypeId}")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteTicketType(
+            @PathVariable Long eventId,
+            @PathVariable Long ticketTypeId,
+            Principal principal,
+            Authentication authentication
+    ) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        ticketTypeService.deleteTicketType(eventId, ticketTypeId, principal.getName(), isAdmin);
+        return ResponseEntity.ok(ApiResponse.success("Ticket type deleted successfully", null));
     }
 }

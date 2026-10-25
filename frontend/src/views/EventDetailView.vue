@@ -590,7 +590,7 @@ function onKey(e: KeyboardEvent) {
           </div>
 
           <transition mode="out-in" enter-active-class="transition duration-200" enter-from-class="opacity-0 translate-y-1" leave-active-class="transition duration-150" leave-to-class="opacity-0">
-            <SeatMap v-if="ticketMode === 'seatmap' && event.hasSeatMap" key="map" :seats="seats" @notify="notify" />
+            <SeatMap v-if="ticketMode === 'seatmap' && event.hasSeatMap" key="map" :seats="seats" :event-id="event.id" @notify="notify" />
             <TicketTierList v-else key="tiers" :ticket-types="event.ticketTypes || []" @notify="notify" />
           </transition>
         </section>

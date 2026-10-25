@@ -11,12 +11,13 @@ import com.eventhub.enums.BookingStatus;
 import com.eventhub.enums.EventSeatStatus;
 import com.eventhub.enums.PaymentProvider;
 import com.eventhub.enums.PaymentStatus;
+import com.eventhub.events.BookingConfirmedEvent;
+import com.eventhub.events.SeatStatusChangedEvent;
 import com.eventhub.exceptions.BadRequestException;
 import com.eventhub.exceptions.ForbiddenException;
 import com.eventhub.exceptions.ResourceNotFoundException;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.PaymentRepository;
-import com.eventhub.events.BookingConfirmedEvent;
 import com.eventhub.services.PaymentService;
 import com.eventhub.services.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,15 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,6 +50,11 @@ public class PaymentServiceImpl implements PaymentService {
     private final ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
     private final TicketService ticketService;
     private final ApplicationEventPublisher eventPublisher;
+
+    private static final String DEFAULT_BANK_CODE = "970415"; // VietinBank
+    private static final String DEFAULT_BANK_NAME = "Ngân Hàng TMCP Công Thương Việt Nam (VietinBank)";
+    private static final String DEFAULT_ACCOUNT_NO = "102874635291";
+    private static final String DEFAULT_ACCOUNT_NAME = "CONG TY CP EVENTHUB VIET NAM";
 
     @Override
     @Transactional
@@ -82,8 +94,11 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         String transactionCode = generateTransactionCode();
-        PaymentProvider provider = request.getProvider() != null ? request.getProvider() : PaymentProvider.MOCK_SANDBOX;
+        PaymentProvider provider = request.getProvider() != null ? request.getProvider() : PaymentProvider.VIETQR;
+        long amountLong = booking.getTotalAmount().longValue();
+
         String paymentUrl = String.format("https://sandbox.eventhub.com/pay/%s", transactionCode);
+        String qrCodeUrl = buildQrCodeUrl(provider, amountLong, booking.getBookingCode());
 
         Payment payment = Payment.builder()
                 .booking(booking)
@@ -93,10 +108,12 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(booking.getTotalAmount())
                 .status(PaymentStatus.PENDING)
                 .paymentUrl(paymentUrl)
+                .qrCodeUrl(qrCodeUrl)
                 .build();
 
         Payment saved = paymentRepository.save(payment);
-        log.info("Payment created with transaction code: {} for amount: {}", saved.getTransactionCode(), saved.getAmount());
+        log.info("Payment created with transaction code: {} for amount: {} with provider: {}",
+                saved.getTransactionCode(), saved.getAmount(), saved.getProvider());
         return mapToResponse(saved);
     }
 
@@ -121,42 +138,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            payment.setPaymentTime(LocalDateTime.now());
-
-            Booking booking = payment.getBooking();
-            booking.setStatus(BookingStatus.CONFIRMED);
-
-            // Mark reserved seats as SOLD and release Redis holds
-            RedisTemplate<String, Object> redisTemplate = redisTemplateProvider.getIfAvailable();
-            for (BookingItem item : booking.getItems()) {
-                if (item.getEventSeat() != null) {
-                    EventSeat eventSeat = item.getEventSeat();
-                    eventSeat.setStatus(EventSeatStatus.SOLD);
-
-                    if (redisTemplate != null) {
-                        String redisKey = String.format("seat_hold:%d:%d",
-                                booking.getEvent().getId(), eventSeat.getId());
-                        redisTemplate.delete(redisKey);
-                    }
-                }
-            }
-
-            // Issue e-tickets
-            ticketService.generateTicketsForBooking(booking);
-
-            // Broadcast domain event to trigger asynchronous email notifications
-            eventPublisher.publishEvent(BookingConfirmedEvent.builder()
-                    .bookingId(booking.getId())
-                    .bookingCode(booking.getBookingCode())
-                    .attendeeEmail(booking.getUser().getEmail())
-                    .attendeeName(booking.getUser().getFullName())
-                    .eventTitle(booking.getEvent().getTitle())
-                    .totalAmount(booking.getTotalAmount())
-                    .build());
-
-            log.info("Payment {} SUCCESS. Booking {} CONFIRMED, seats marked SOLD, and e-tickets issued.",
-                    payment.getTransactionCode(), booking.getBookingCode());
+            confirmPaymentInternal(payment);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setErrorMessage("Payment was rejected or cancelled");
@@ -184,6 +166,110 @@ public class PaymentServiceImpl implements PaymentService {
         return mapToResponse(payment);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentStatusByTransactionCode(String transactionCode, String currentUsername, boolean isAdmin) {
+        Payment payment = paymentRepository.findByTransactionCode(transactionCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "transactionCode", transactionCode));
+
+        boolean isOwner = payment.getBooking().getUser().getUsername().equals(currentUsername);
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException("You do not have permission to view this payment");
+        }
+
+        return mapToResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse simulateInstantPaymentNotification(String transactionCode) {
+        log.info("Simulating IPN webhook confirmation for transaction: {}", transactionCode);
+        Payment payment = paymentRepository.findByTransactionCode(transactionCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "transactionCode", transactionCode));
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return mapToResponse(payment);
+        }
+
+        confirmPaymentInternal(payment);
+        Payment updated = paymentRepository.save(payment);
+        return mapToResponse(updated);
+    }
+
+    private void confirmPaymentInternal(Payment payment) {
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setPaymentTime(LocalDateTime.now());
+
+        Booking booking = payment.getBooking();
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        // Mark reserved seats as SOLD and release Redis holds
+        RedisTemplate<String, Object> redisTemplate = redisTemplateProvider.getIfAvailable();
+        List<Long> soldSeatIds = new ArrayList<>();
+
+        for (BookingItem item : booking.getItems()) {
+            if (item.getEventSeat() != null) {
+                EventSeat eventSeat = item.getEventSeat();
+                eventSeat.setStatus(EventSeatStatus.SOLD);
+                eventSeat.setHeldByUsername(null);
+                eventSeat.setHeldExpiresAt(null);
+                soldSeatIds.add(eventSeat.getId());
+
+                if (redisTemplate != null) {
+                    String redisKey = String.format("seat_hold:%d:%d",
+                            booking.getEvent().getId(), eventSeat.getId());
+                    redisTemplate.delete(redisKey);
+                }
+            }
+        }
+
+        // Issue e-tickets
+        ticketService.generateTicketsForBooking(booking);
+
+        // Notify seat stream that seats are officially SOLD
+        if (!soldSeatIds.isEmpty()) {
+            eventPublisher.publishEvent(SeatStatusChangedEvent.builder()
+                    .eventId(booking.getEvent().getId())
+                    .seatIds(soldSeatIds)
+                    .action("SOLD")
+                    .heldByUsername(booking.getUser().getUsername())
+                    .build());
+        }
+
+        // Broadcast domain event to trigger asynchronous email notifications
+        eventPublisher.publishEvent(BookingConfirmedEvent.builder()
+                .bookingId(booking.getId())
+                .bookingCode(booking.getBookingCode())
+                .attendeeEmail(booking.getUser().getEmail())
+                .attendeeName(booking.getUser().getFullName())
+                .eventTitle(booking.getEvent().getTitle())
+                .totalAmount(booking.getTotalAmount())
+                .build());
+
+        log.info("Payment {} SUCCESS. Booking {} CONFIRMED, seats marked SOLD, and e-tickets issued.",
+                payment.getTransactionCode(), booking.getBookingCode());
+    }
+
+    private String buildQrCodeUrl(PaymentProvider provider, long amount, String bookingCode) {
+        String encodedAccountName = URLEncoder.encode(DEFAULT_ACCOUNT_NAME, StandardCharsets.UTF_8);
+        String encodedContent = URLEncoder.encode(bookingCode, StandardCharsets.UTF_8);
+
+        switch (provider) {
+            case MOMO:
+                return String.format("https://img.vietqr.io/image/970422-0987654321-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                        amount, encodedContent, encodedAccountName);
+            case VNPAY:
+                return String.format("https://img.vietqr.io/image/970436-102874635291-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                        amount, encodedContent, encodedAccountName);
+            case VIETQR:
+            case MOCK_SANDBOX:
+            case CREDIT_CARD:
+            default:
+                return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                        DEFAULT_BANK_CODE, DEFAULT_ACCOUNT_NO, amount, encodedContent, encodedAccountName);
+        }
+    }
+
     private String generateTransactionCode() {
         String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String randomSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
@@ -191,16 +277,29 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentResponse mapToResponse(Payment payment) {
+        Booking booking = payment.getBooking();
+        LocalDateTime expiresAt = booking != null ? booking.getExpiresAt() : null;
+        Long remainingSeconds = null;
+        if (expiresAt != null && payment.getStatus() == PaymentStatus.PENDING) {
+            remainingSeconds = Math.max(0, Duration.between(LocalDateTime.now(), expiresAt).getSeconds());
+        }
+
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .transactionCode(payment.getTransactionCode())
-                .bookingCode(payment.getBooking().getBookingCode())
-                .eventId(payment.getBooking().getEvent().getId())
-                .eventTitle(payment.getBooking().getEvent().getTitle())
+                .bookingCode(booking != null ? booking.getBookingCode() : null)
+                .eventId(booking != null && booking.getEvent() != null ? booking.getEvent().getId() : null)
+                .eventTitle(booking != null && booking.getEvent() != null ? booking.getEvent().getTitle() : null)
                 .amount(payment.getAmount())
                 .provider(payment.getProvider())
                 .status(payment.getStatus())
                 .paymentUrl(payment.getPaymentUrl())
+                .qrCodeUrl(payment.getQrCodeUrl())
+                .bankName(DEFAULT_BANK_NAME)
+                .accountNumber(DEFAULT_ACCOUNT_NO)
+                .accountName(DEFAULT_ACCOUNT_NAME)
+                .transferContent(booking != null ? booking.getBookingCode() : payment.getTransactionCode())
+                .remainingSeconds(remainingSeconds)
                 .paymentTime(payment.getPaymentTime())
                 .errorMessage(payment.getErrorMessage())
                 .createdAt(payment.getCreatedAt())

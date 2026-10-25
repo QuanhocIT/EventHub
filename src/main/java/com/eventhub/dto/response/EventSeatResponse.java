@@ -37,4 +37,13 @@ public class EventSeatResponse {
 
     @Schema(description = "Seat price for this event", example = "150.00")
     private BigDecimal price;
+
+    @Schema(description = "Whether this seat is held by the requesting user", example = "true")
+    private Boolean heldByCurrentUser;
+
+    @Schema(description = "Expiration timestamp of the seat hold", example = "2026-10-25T15:30:00")
+    private java.time.LocalDateTime heldExpiresAt;
+
+    @Schema(description = "Remaining seconds of the hold", example = "854")
+    private Long remainingHoldSeconds;
 }

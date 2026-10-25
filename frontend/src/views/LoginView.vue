@@ -21,6 +21,7 @@ import {
   QrCode,
   Smartphone,
   Star,
+  RefreshCw,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -107,20 +108,44 @@ const closeForgotModal = () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-slate-50/70">
-    <!-- Main Auth Card Container (Modern Split Layout) -->
-    <div class="w-full max-w-5xl bg-white rounded-3xl border border-slate-200/90 shadow-2xl shadow-slate-200/50 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+  <div class="relative min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#070A12] overflow-hidden">
+    <!-- Cinematic Full-screen Background Image with Rich Overlays -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden select-none">
+      <img
+        src="/images/about_concert_crowd.jpg"
+        alt="Concert & Cinema Atmosphere"
+        class="w-full h-full object-cover object-center scale-105 filter blur-[3px] opacity-35"
+      />
+      <!-- Atmospheric Gradients: Dark edges, spotlight center -->
+      <div class="absolute inset-0 bg-gradient-to-t from-[#070A12] via-[#070A12]/80 to-[#070A12]/85"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-[#070A12]/90 via-transparent to-[#070A12]/90"></div>
+      <div class="absolute inset-0 bg-[#070A12]/40 backdrop-brightness-75"></div>
+    </div>
+
+    <!-- Ambient glowing lights -->
+    <div class="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute top-1/2 right-1/3 w-72 h-72 bg-blue-500/15 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <!-- Main Auth Card Container (Modern Dark Glassmorphism Split Layout) -->
+    <div class="relative z-10 w-full max-w-5xl bg-[#0d1424]/90 backdrop-blur-2xl rounded-3xl border border-slate-700/60 shadow-2xl shadow-black/90 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
       
       <!-- Left Column: Visual Showcase & Brand Story (5 Cols on LG) -->
-      <div class="hidden lg:flex lg:col-span-5 relative bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-8 xl:p-10 flex-col justify-between overflow-hidden">
-        <!-- Ambient lighting glow -->
+      <div class="hidden lg:flex lg:col-span-5 relative bg-gradient-to-br from-slate-950 via-[#0a0f1e] to-[#121a36] text-white p-8 xl:p-10 flex-col justify-between overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800/80">
+        <!-- Cinema Hall textured background overlay for left column -->
+        <img
+          src="/images/about_cinema_hall.jpg"
+          alt="Cinema Hall"
+          class="absolute inset-0 w-full h-full object-cover object-center opacity-20 mix-blend-screen pointer-events-none"
+        />
+        <!-- Ambient lighting glow inside left col -->
         <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-indigo-600/30 blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-violet-600/25 blur-3xl pointer-events-none"></div>
 
         <!-- Top branding -->
         <div class="relative z-10">
           <div class="flex items-center gap-2.5 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
               <Ticket class="w-5 h-5 text-white transform -rotate-12" />
             </div>
             <div>
@@ -143,8 +168,8 @@ const closeForgotModal = () => {
         </div>
 
         <!-- Middle Feature Bullets -->
-        <div class="relative z-10 space-y-3.5 my-8">
-          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+        <div class="relative z-10 space-y-3 my-8">
+          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition">
             <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
               <QrCode class="w-4 h-4" />
             </div>
@@ -154,7 +179,7 @@ const closeForgotModal = () => {
             </div>
           </div>
 
-          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition">
             <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
               <Smartphone class="w-4 h-4" />
             </div>
@@ -164,7 +189,7 @@ const closeForgotModal = () => {
             </div>
           </div>
 
-          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+          <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition">
             <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
               <ShieldCheck class="w-4 h-4" />
             </div>
@@ -190,31 +215,34 @@ const closeForgotModal = () => {
       </div>
 
       <!-- Right Column: Interactive Login Form (7 Cols on LG) -->
-      <div class="lg:col-span-7 p-6 sm:p-10 xl:p-12 flex flex-col justify-between">
+      <div class="lg:col-span-7 p-6 sm:p-10 xl:p-12 flex flex-col justify-between bg-[#0e1628]/70 backdrop-blur-md">
         <div>
           <!-- Header -->
           <div class="mb-6">
             <div class="flex items-center justify-between mb-2">
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-bold">
                 <LogIn class="w-3.5 h-3.5" />
                 <span>Cổng Đăng Nhập An Toàn</span>
               </div>
-              <span class="text-xs text-slate-400">256-bit SSL</span>
+              <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                <ShieldCheck class="w-3.5 h-3.5 text-emerald-400" />
+                256-bit SSL
+              </span>
             </div>
 
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Đăng Nhập Tài Khoản
             </h2>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 leading-relaxed">
               Truy cập để quản lý vé điện tử, lịch trình sự kiện và hóa đơn thanh toán.
             </p>
           </div>
 
-          <!-- Quick 1-Click Role Switcher (Enhanced) -->
-          <div class="mb-6 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90">
-            <div class="flex items-center justify-between text-xs mb-2">
-              <span class="font-bold text-slate-700 flex items-center gap-1.5">
-                <Sparkles class="w-3.5 h-3.5 text-amber-500" />
+          <!-- Quick 1-Click Role Switcher (Enhanced Dark) -->
+          <div class="mb-6 p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+            <div class="flex items-center justify-between text-xs mb-2.5">
+              <span class="font-bold text-slate-200 flex items-center gap-1.5">
+                <Sparkles class="w-3.5 h-3.5 text-amber-400" />
                 <span>Đăng nhập nhanh (Test tài khoản):</span>
               </span>
               <span class="text-[11px] text-slate-400">1 chạm điền tự động</span>
@@ -224,11 +252,11 @@ const closeForgotModal = () => {
               <button
                 type="button"
                 @click="fillDemo('customer')"
-                class="py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5"
+                class="py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5 cursor-pointer"
                 :class="[
                   selectedRole === 'customer'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:border-slate-600 hover:bg-slate-800 hover:text-white'
                 ]"
               >
                 <span>Khách hàng</span>
@@ -237,11 +265,11 @@ const closeForgotModal = () => {
               <button
                 type="button"
                 @click="fillDemo('admin')"
-                class="py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5"
+                class="py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5 cursor-pointer"
                 :class="[
                   selectedRole === 'admin'
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                    ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:border-slate-600 hover:bg-slate-800 hover:text-white'
                 ]"
               >
                 <span>Quản trị viên</span>
@@ -250,11 +278,11 @@ const closeForgotModal = () => {
               <button
                 type="button"
                 @click="fillDemo('organizer')"
-                class="col-span-2 sm:col-span-1 py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5"
+                class="col-span-2 sm:col-span-1 py-2 px-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-center gap-1.5 cursor-pointer"
                 :class="[
                   selectedRole === 'organizer'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-300 hover:bg-slate-50'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
+                    : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:border-slate-600 hover:bg-slate-800 hover:text-white'
                 ]"
               >
                 <span>Ban Tổ Chức</span>
@@ -267,7 +295,7 @@ const closeForgotModal = () => {
             <button
               type="button"
               @click="handleSocialLogin('Google')"
-              class="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition shadow-2xs"
+              class="py-2.5 px-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-600 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
             >
               <!-- Google G Icon -->
               <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -282,10 +310,10 @@ const closeForgotModal = () => {
             <button
               type="button"
               @click="handleSocialLogin('Apple')"
-              class="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition shadow-2xs"
+              class="py-2.5 px-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-600 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
             >
               <!-- Apple Icon -->
-              <svg class="w-4 h-4 shrink-0 fill-current text-slate-900" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 shrink-0 fill-current text-white" viewBox="0 0 24 24">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.12.64-2.79 1.42-.58.68-1.1 1.76-.96 2.81 1.06.08 2.14-.58 2.74-1.36z" />
               </svg>
               <span>Apple ID</span>
@@ -294,20 +322,20 @@ const closeForgotModal = () => {
 
           <!-- Divider -->
           <div class="relative flex items-center justify-center mb-6">
-            <div class="border-t border-slate-200 w-full"></div>
-            <span class="bg-white px-3 text-slate-400 text-xs font-medium shrink-0">hoặc bằng tài khoản</span>
-            <div class="border-t border-slate-200 w-full"></div>
+            <div class="border-t border-slate-800 w-full"></div>
+            <span class="bg-[#0e1628] px-3 text-slate-500 text-xs font-medium shrink-0">hoặc bằng tài khoản</span>
+            <div class="border-t border-slate-800 w-full"></div>
           </div>
 
           <!-- Main Credentials Form -->
           <form @submit.prevent="handleLogin" class="space-y-4" autocomplete="off">
             <!-- Username/Email -->
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">
-                Tên đăng nhập hoặc Email <span class="text-rose-500">*</span>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Tên đăng nhập hoặc Email <span class="text-rose-400">*</span>
               </label>
               <div class="relative">
-                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                   <User class="w-4 h-4" />
                 </div>
                 <input
@@ -318,13 +346,13 @@ const closeForgotModal = () => {
                   autocomplete="off"
                   placeholder="vd: admin, organizer, hoặc customer"
                   required
-                  class="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  class="w-full pl-10 pr-9 py-2.5 rounded-xl border border-slate-700/80 bg-slate-900/90 text-xs sm:text-sm text-white placeholder-slate-500 focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
                 />
                 <button
                   v-if="username"
                   type="button"
                   @click="username = ''; selectedRole = null"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 cursor-pointer"
                   title="Xóa nhanh"
                 >
                   <X class="w-3.5 h-3.5" />
@@ -335,19 +363,19 @@ const closeForgotModal = () => {
             <!-- Password -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-bold text-slate-700">
-                  Mật khẩu <span class="text-rose-500">*</span>
+                <label class="block text-xs font-semibold text-slate-300">
+                  Mật khẩu <span class="text-rose-400">*</span>
                 </label>
                 <button
                   type="button"
                   @click="showForgotModal = true"
-                  class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition hover:underline cursor-pointer"
+                  class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition hover:underline cursor-pointer"
                 >
                   Quên mật khẩu?
                 </button>
               </div>
               <div class="relative">
-                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                   <Lock class="w-4 h-4" />
                 </div>
                 <input
@@ -358,12 +386,12 @@ const closeForgotModal = () => {
                   :type="showPassword ? 'text' : 'password'"
                   placeholder="••••••••"
                   required
-                  class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-700/80 bg-slate-900/90 text-xs sm:text-sm text-white placeholder-slate-500 focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
                 />
                 <button
                   type="button"
                   @click="showPassword = !showPassword"
-                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition cursor-pointer"
                   title="Hiện / Ẩn mật khẩu"
                 >
                   <EyeOff v-if="showPassword" class="w-4 h-4" />
@@ -378,18 +406,18 @@ const closeForgotModal = () => {
                 <input
                   v-model="rememberMe"
                   type="checkbox"
-                  class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                  class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
                 />
-                <span class="text-xs text-slate-600 font-medium">Ghi nhớ đăng nhập trên thiết bị này</span>
+                <span class="text-xs text-slate-400 font-medium">Ghi nhớ đăng nhập trên thiết bị này</span>
               </label>
             </div>
 
             <!-- Error message alert -->
             <div
               v-if="localError"
-              class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium animate-shake"
+              class="p-3 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2 font-medium"
             >
-              <AlertCircle class="w-4 h-4 shrink-0 text-rose-500" />
+              <AlertCircle class="w-4 h-4 shrink-0 text-rose-400" />
               <span>{{ localError }}</span>
             </div>
 
@@ -397,7 +425,7 @@ const closeForgotModal = () => {
             <button
               type="submit"
               :disabled="authStore.loading"
-              class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-600/25 transition-all disabled:opacity-50"
+              class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50"
             >
               <LogIn v-if="!authStore.loading" class="w-4 h-4" />
               <RefreshCw v-else class="w-4 h-4 animate-spin" />
@@ -408,67 +436,67 @@ const closeForgotModal = () => {
         </div>
 
         <!-- Footer -->
-        <div class="text-center mt-6 pt-5 border-t border-slate-100 text-xs text-slate-500">
+        <div class="text-center mt-6 pt-5 border-t border-slate-800/80 text-xs text-slate-400">
           Chưa có tài khoản EventHub?
-          <router-link to="/register" class="text-indigo-600 font-bold hover:underline ml-1">
+          <router-link to="/register" class="text-indigo-400 font-bold hover:text-indigo-300 hover:underline ml-1">
             Đăng ký tài khoản mới &rarr;
           </router-link>
         </div>
       </div>
     </div>
 
-    <!-- Forgot Password Modal -->
+    <!-- Forgot Password Modal (Dark theme) -->
     <div
       v-if="showForgotModal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
       @click.self="closeForgotModal"
     >
-      <div class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 text-slate-900">
+      <div class="relative w-full max-w-md bg-[#0d1424] rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 text-slate-100">
         <button
           @click="closeForgotModal"
-          class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
+          class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
         >
           <X class="w-4 h-4" />
         </button>
 
         <div v-if="forgotSuccess" class="text-center py-4 space-y-3">
-          <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-950/60 border border-emerald-800 text-emerald-400 mx-auto flex items-center justify-center">
             <CheckCircle2 class="w-8 h-8" />
           </div>
-          <h3 class="text-lg font-bold text-slate-900">Đã gửi liên kết khôi phục!</h3>
-          <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-            Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến <strong>{{ forgotEmail }}</strong>. Vui lòng kiểm tra hòm thư của bạn.
+          <h3 class="text-lg font-bold text-white">Đã gửi liên kết khôi phục!</h3>
+          <p class="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
+            Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến <strong class="text-slate-200">{{ forgotEmail }}</strong>. Vui lòng kiểm tra hòm thư của bạn.
           </p>
           <button
             @click="closeForgotModal"
-            class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition"
+            class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition cursor-pointer"
           >
             Đóng cửa sổ
           </button>
         </div>
 
         <form v-else @submit.prevent="handleForgotPassword" class="space-y-4">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-2">
             <HelpCircle class="w-6 h-6" />
           </div>
 
           <div>
-            <h3 class="text-lg font-bold text-slate-900">Quên Mật Khẩu?</h3>
-            <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+            <h3 class="text-lg font-bold text-white">Quên Mật Khẩu?</h3>
+            <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
               Nhập địa chỉ email đăng ký tài khoản để nhận liên kết thiết lập lại mật khẩu an toàn.
             </p>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Email đăng ký</label>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Email đăng ký</label>
             <div class="relative">
-              <Mail class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 v-model="forgotEmail"
                 type="email"
                 placeholder="email@example.com"
                 required
-                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-900/90 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -477,14 +505,14 @@ const closeForgotModal = () => {
             <button
               type="button"
               @click="closeForgotModal"
-              class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50"
+              class="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800 cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               :disabled="isSendingForgot"
-              class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+              class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer"
             >
               <Send v-if="!isSendingForgot" class="w-3.5 h-3.5" />
               <span v-if="!isSendingForgot">Gửi Hướng Dẫn</span>

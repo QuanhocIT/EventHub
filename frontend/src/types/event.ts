@@ -35,11 +35,15 @@ export interface EventSeat {
   id: number
   seatId: number
   rowName: string
+  seatRow?: string
   seatNumber: number
   zone: SeatZone
   status: SeatStatus
   price: number
   heldUntil?: string
+  heldByCurrentUser?: boolean
+  heldExpiresAt?: string
+  remainingHoldSeconds?: number
 }
 
 export interface Event {

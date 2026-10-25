@@ -19,9 +19,14 @@ public class CheckInResponse {
     private String message;
     private String ticketCode;
     private String attendeeName;
+    private String attendeeEmail;
+    private String attendeePhone;
+    private Long eventId;
     private String eventTitle;
     private String seatInfo;
     private String ticketTypeName;
     private LocalDateTime checkInTime;
     private String staffUsername;
+    private String bookingCode;
+    private String status;
 }

@@ -12,8 +12,6 @@ import {
   Menu,
   X,
   Clock,
-  MapPin,
-  PhoneCall,
   Sparkles,
   ChevronDown,
   LayoutDashboard,
@@ -28,10 +26,14 @@ import {
   Palette,
   SlidersHorizontal,
   ChevronRight,
-  CreditCard,
-  FileSpreadsheet,
   User as UserIcon,
   Film,
+  Bell,
+  Play,
+  TicketPercent,
+  Newspaper,
+  Info,
+  Building2,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -54,7 +56,6 @@ const verticalDrawerOpen = ref(false)
 const mobileMenuOpen = ref(false)
 const userDropdownOpen = ref(false)
 const searchKeyword = ref('')
-const selectedLocation = ref('TP. Hồ Chí Minh')
 
 const handleSearch = () => {
   if (searchKeyword.value.trim()) {
@@ -72,609 +73,432 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200">
-    <!-- Top Micro Announcement Bar (Only shown on public consumer routes) -->
-    <div
-      v-if="!isDashboardRoute"
-      class="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-800 text-white text-[11px] sm:text-xs py-1 px-4"
-    >
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="bg-white/20 px-2 py-0.5 rounded font-bold uppercase text-[10px]">Ưu đãi số lượng có hạn</span>
-          <span class="hidden sm:inline">Nhập mã <strong>EVENTHUB2026</strong> giảm ngay 15% cho mọi vé sự kiện!</span>
-          <span class="sm:hidden font-bold">Mã EVENTHUB2026 giảm 15%</span>
-        </div>
-
-        <div class="flex items-center gap-4 text-white/90">
-          <div class="hidden md:flex items-center gap-1">
-            <PhoneCall class="w-3 h-3" />
-            <span>Hotline: 1900 6868 (8:00 - 22:00)</span>
-          </div>
-          <!-- Location selector -->
-          <div class="flex items-center gap-1 font-semibold cursor-pointer hover:text-white">
-            <MapPin class="w-3 h-3 text-pink-300" />
-            <select
-              v-model="selectedLocation"
-              class="bg-transparent text-white text-[11px] font-semibold focus:outline-none cursor-pointer"
-            >
-              <option value="Toàn quốc" class="text-slate-900">Toàn quốc</option>
-              <option value="TP. Hồ Chí Minh" class="text-slate-900">TP. Hồ Chí Minh</option>
-              <option value="Hà Nội" class="text-slate-900">Hà Nội</option>
-              <option value="Đà Nẵng" class="text-slate-900">Đà Nẵng</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
+  <header class="sticky top-0 z-50 bg-[#070A12]/95 backdrop-blur-md border-b border-[#1A2338] text-slate-200">
     <!-- Main Navigation Bar -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <!-- Left Section: Vertical Menu Trigger & Logo -->
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-          <!-- Button Mở Menu Dọc (Áp dụng chung mọi trang) -->
+      <div class="flex items-center justify-between h-16 sm:h-20 gap-4">
+        <!-- Left: Logo & Menu Dọc trigger -->
+        <div class="flex items-center gap-3 shrink-0">
+          <!-- Button Mở Menu Dọc -->
           <button
             type="button"
             @click="verticalDrawerOpen = true"
-            class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-700 hover:text-indigo-600 transition cursor-pointer text-xs font-bold shadow-2xs group"
-            title="Mở menu dọc điều hướng hệ thống"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-blue-400 transition cursor-pointer text-xs font-bold"
+            title="Mở menu dọc"
           >
-            <SlidersHorizontal class="w-4 h-4 text-indigo-600 group-hover:rotate-90 transition-transform duration-300" />
-            <span class="hidden sm:inline">Menu Dọc</span>
-            <span v-if="authStore.isAdmin || authStore.isOrganizer" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <SlidersHorizontal class="w-3.5 h-3.5 text-blue-500" />
+            <span class="hidden sm:inline">Menu</span>
           </button>
 
-          <!-- Logo -->
-          <router-link to="/" class="flex items-center gap-2.5 shrink-0 group">
-            <div
-              class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform"
-            >
-              <Ticket class="w-5 h-5 text-white transform -rotate-12 group-hover:rotate-0 transition-transform" />
+          <!-- CineVerse / EventHub Logo -->
+          <router-link to="/" class="flex items-center gap-2.5 group">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+              <Play class="w-5 h-5 text-white fill-white ml-0.5" />
             </div>
-            <div>
-              <span class="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Event<span class="text-indigo-600">Hub</span></span>
-              <span
-                v-if="!isDashboardRoute"
-                class="hidden lg:inline-block ml-1.5 text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200"
-              >
-                Ticketing Platform
+            <div class="flex flex-col">
+              <span class="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">
+                Cine<span class="text-blue-500">Verse</span>
               </span>
-              <span
-                v-else
-                class="hidden lg:inline-block ml-1.5 text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200"
-              >
-                Studio & Management
+              <span class="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                Movies • Events • More
               </span>
             </div>
           </router-link>
         </div>
 
-        <!-- Center: Search Bar with Location (Public Storefront Mode) -->
-        <div v-if="!isDashboardRoute" class="hidden md:flex items-center flex-1 max-w-xl mx-8">
-          <form
-            @submit.prevent="handleSearch"
-            class="flex items-center w-full rounded-full bg-slate-100 hover:bg-slate-200/80 focus-within:bg-white border border-slate-300 focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-100 transition-all p-1"
+        <!-- Center: Navigation Links matching Image 2 -->
+        <nav class="hidden xl:flex items-center gap-1.5 text-sm font-semibold">
+          <router-link
+            to="/"
+            class="px-3 py-1.5 rounded-lg transition-colors"
+            :class="route.path === '/' ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
           >
-            <div class="flex items-center flex-1 pl-3.5 gap-2">
-              <Search class="w-4 h-4 text-slate-400 shrink-0" />
+            Trang chủ
+          </router-link>
+          <router-link
+            to="/cinema"
+            class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+            :class="route.path === '/cinema' ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
+          >
+            Phim
+          </router-link>
+          <router-link
+            to="/events"
+            class="px-3 py-1.5 rounded-lg transition-colors"
+            :class="route.path.startsWith('/events') ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
+          >
+            Sự kiện
+          </router-link>
+          <router-link
+            to="/cinemas"
+            class="px-3 py-1.5 rounded-lg transition-colors"
+            :class="route.path.startsWith('/cinemas') || route.path.startsWith('/theaters') ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
+          >
+            Rạp chiếu
+          </router-link>
+          <router-link
+            to="/promotions"
+            class="px-3 py-1.5 rounded-lg transition-colors"
+            :class="route.path.startsWith('/promotions') ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
+          >
+            Khuyến mãi
+          </router-link>
+          <router-link
+            to="/about"
+            class="px-3 py-1.5 rounded-lg transition-colors"
+            :class="route.path.startsWith('/about') ? 'text-blue-400 font-bold border-b-2 border-blue-500 pb-0.5' : 'text-slate-300 hover:text-white'"
+          >
+            Về chúng tôi
+          </router-link>
+          <router-link
+            v-if="authStore.isAuthenticated && (authStore.isAdmin || authStore.isOrganizer || authStore.isStaff)"
+            to="/dashboard"
+            class="px-3.5 py-2 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors font-bold flex items-center gap-1"
+          >
+            <LayoutDashboard class="w-4 h-4" />
+            <span>Quản trị</span>
+          </router-link>
+        </nav>
+
+        <!-- Right: Search, Notifications & Auth Buttons -->
+        <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <!-- Search Pill matching Image 2 -->
+          <div class="hidden md:flex items-center">
+            <form
+              @submit.prevent="handleSearch"
+              class="flex items-center w-56 lg:w-64 rounded-full bg-[#111827] border border-[#232F47] focus-within:border-blue-500 px-3 py-1.5 transition-all text-xs"
+            >
+              <Search class="w-3.5 h-3.5 text-slate-400 shrink-0 mr-2" />
               <input
                 v-model="searchKeyword"
                 type="text"
-                placeholder="Tìm ca sĩ, ban nhạc, tên giải chạy, địa điểm..."
-                class="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+                placeholder="Tìm phim, sự kiện, nghệ sĩ..."
+                class="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-xs"
               />
-            </div>
-            <button
-              type="submit"
-              class="px-4 py-1.5 rounded-full bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-colors shrink-0"
-            >
-              Tìm kiếm
-            </button>
-          </form>
-        </div>
-
-        <!-- Center: Studio Breadcrumb / Return Link (Dashboard Mode) -->
-        <div v-else class="hidden md:flex items-center gap-3">
-          <router-link
-            to="/events"
-            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-600 text-xs font-bold transition shadow-2xs group"
-          >
-            <Compass class="w-3.5 h-3.5 text-indigo-600 group-hover:rotate-45 transition-transform" />
-            <span>← Khám Phá Sự Kiện</span>
-          </router-link>
-          <span class="text-xs text-slate-400">&bull;</span>
-          <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Hệ Thống Trực Tuyến 2026
-          </span>
-        </div>
-
-        <!-- Links & User Action -->
-        <div class="flex items-center gap-3">
-          <!-- Quick Nav (Only on Storefront) -->
-          <nav v-if="!isDashboardRoute" class="hidden lg:flex items-center gap-1 mr-2 text-sm font-semibold">
-            <router-link
-              to="/events"
-              class="px-3 py-2 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-50 transition-colors"
-            >
-              Khám phá sự kiện
-            </router-link>
-            <router-link
-              to="/cinema"
-              class="px-3 py-2 rounded-lg text-slate-700 hover:text-rose-600 hover:bg-rose-50/50 transition-colors flex items-center gap-1.5 font-bold"
-            >
-              <Film class="w-4 h-4 text-rose-500" />
-              <span>Rạp Phim</span>
-              <span class="px-1.5 py-0.2 rounded text-[10px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-200">Hot</span>
-            </router-link>
-            <router-link
-              to="/my-tickets"
-              class="px-3 py-2 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-            >
-              <Ticket class="w-4 h-4 text-indigo-600" />
-              Vé của tôi
-            </router-link>
-            <router-link
-              v-if="authStore.isAuthenticated && (authStore.isAdmin || authStore.isOrganizer || authStore.isStaff)"
-              to="/dashboard"
-              class="px-3 py-2 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-            >
-              <LayoutDashboard class="w-4 h-4 text-indigo-600" />
-              Quản trị & Báo cáo
-            </router-link>
-          </nav>
-
-
-          <!-- Hold Timer Badge -->
-          <div
-            v-if="bookingStore.totalTicketCount > 0 && bookingStore.currentEvent"
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-xs font-bold animate-pulse"
-          >
-            <Clock class="w-3.5 h-3.5 text-amber-600" />
-            <span>Giữ {{ bookingStore.totalTicketCount }} vé</span>
+            </form>
           </div>
 
-          <!-- Auth States -->
+          <!-- Notification Bell -->
+          <button
+            type="button"
+            class="p-2 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition relative"
+            title="Thông báo"
+          >
+            <Bell class="w-4 h-4" />
+            <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500"></span>
+          </button>
+
+          <!-- User Authenticated Profile Dropdown -->
           <template v-if="authStore.isAuthenticated && authStore.user">
             <div class="relative">
               <button
                 @click="userDropdownOpen = !userDropdownOpen"
-                class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm font-semibold text-slate-800 transition-colors"
+                class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-bold text-white transition"
               >
-                <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px]">
                   {{ authStore.user.fullName.charAt(0) }}
                 </div>
-                <span class="hidden sm:inline max-w-[120px] truncate">{{ authStore.user.fullName }}</span>
+                <span class="hidden sm:inline max-w-[100px] truncate">{{ authStore.user.fullName }}</span>
                 <ChevronDown class="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               <div
                 v-if="userDropdownOpen"
-                class="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-slate-200 shadow-xl py-2 z-50 text-sm"
+                class="absolute right-0 mt-2 w-56 rounded-2xl bg-[#0D121F] border border-[#1C2438] shadow-2xl py-2 z-50 text-xs text-slate-200"
               >
-                <div class="px-4 py-2.5 border-b border-slate-100">
-                  <p class="text-xs text-slate-500">Đăng nhập tài khoản</p>
-                  <p class="font-bold text-slate-900 truncate">{{ authStore.user.fullName }}</p>
-                  <p class="text-xs text-slate-500 truncate">{{ authStore.user.email }}</p>
-                  <span class="inline-block mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
-                    {{ authStore.user.role }}
-                  </span>
+                <div class="px-4 py-2.5 border-b border-slate-800">
+                  <p class="text-[10px] text-slate-400">Đã đăng nhập</p>
+                  <p class="font-bold text-white truncate">{{ authStore.user.fullName }}</p>
+                  <p class="text-[10px] text-slate-400 truncate">{{ authStore.user.email }}</p>
                 </div>
                 <router-link
                   to="/profile"
                   @click="userDropdownOpen = false"
-                  class="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors font-medium"
+                  class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-slate-200"
                 >
-                  <UserIcon class="w-4 h-4 text-indigo-600" />
-                  Hồ sơ cá nhân & Đổi MK
+                  <UserIcon class="w-4 h-4 text-blue-400" />
+                  <span>Hồ sơ cá nhân</span>
                 </router-link>
                 <router-link
                   to="/my-tickets"
                   @click="userDropdownOpen = false"
-                  class="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                  class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-slate-200"
                 >
-                  <Ticket class="w-4 h-4 text-indigo-600" />
-                  Vé điện tử của tôi
+                  <Ticket class="w-4 h-4 text-blue-400" />
+                  <span>Vé của tôi</span>
                 </router-link>
                 <router-link
-                  v-if="authStore.isStaff"
-                  to="/dashboard?tab=staff_scanner"
+                  v-if="authStore.isAdmin || authStore.isOrganizer || authStore.isStaff"
+                  to="/dashboard"
                   @click="userDropdownOpen = false"
-                  class="flex items-center gap-2.5 px-4 py-2.5 text-emerald-700 hover:bg-emerald-50 transition-colors font-semibold"
+                  class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-amber-300 font-bold"
                 >
-                  <QrCode class="w-4 h-4 text-emerald-600" />
-                  Trạm Soát Vé Cổng (Staff)
+                  <LayoutDashboard class="w-4 h-4 text-amber-400" />
+                  <span>Trung tâm quản trị</span>
                 </router-link>
-                <router-link
-                  v-else-if="authStore.isOrganizer"
-                  to="/dashboard?tab=org_overview"
-                  @click="userDropdownOpen = false"
-                  class="flex items-center gap-2.5 px-4 py-2.5 text-purple-700 hover:bg-purple-50 transition-colors font-semibold"
-                >
-                  <Building2 class="w-4 h-4 text-purple-600" />
-                  Quản Lý Sự Kiện (Organizer)
-                </router-link>
-                <router-link
-                  v-else-if="authStore.isAdmin"
-                  to="/dashboard?tab=overview"
-                  @click="userDropdownOpen = false"
-                  class="flex items-center gap-2.5 px-4 py-2.5 text-indigo-700 hover:bg-indigo-50 transition-colors font-semibold"
-                >
-                  <LayoutDashboard class="w-4 h-4 text-indigo-600" />
-                  Trung Tâm Quản Trị (Admin)
-                </router-link>
-
                 <button
+                  type="button"
                   @click="handleLogout"
-                  class="w-full flex items-center gap-2.5 px-4 py-2.5 text-rose-600 hover:bg-rose-50 transition-colors text-left font-medium"
+                  class="w-full flex items-center gap-2 px-4 py-2 text-rose-400 hover:bg-rose-500/10 text-left font-bold transition cursor-pointer"
                 >
                   <LogOut class="w-4 h-4" />
-                  Đăng xuất
+                  <span>Đăng xuất</span>
                 </button>
               </div>
             </div>
           </template>
 
+          <!-- Guest Auth Buttons -->
           <template v-else>
             <div class="flex items-center gap-2">
               <router-link
                 to="/login"
-                class="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition"
               >
                 Đăng nhập
               </router-link>
               <router-link
                 to="/register"
-                class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all"
+                class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/30 transition cursor-pointer"
               >
                 Đăng ký
               </router-link>
             </div>
           </template>
 
-          <!-- Mobile Toggle -->
+          <!-- Mobile Menu Trigger -->
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
-            class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+            class="xl:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
           >
-            <Menu v-if="!mobileMenuOpen" class="w-6 h-6" />
-            <X v-else class="w-6 h-6" />
+            <Menu v-if="!mobileMenuOpen" class="w-5 h-5" />
+            <X v-else class="w-5 h-5" />
           </button>
         </div>
       </div>
 
       <!-- Mobile Dropdown -->
-      <div v-if="mobileMenuOpen" class="lg:hidden py-4 border-t border-slate-200 space-y-3">
-        <form @submit.prevent="handleSearch" class="relative w-full">
+      <div v-if="mobileMenuOpen" class="xl:hidden py-4 border-t border-slate-800 space-y-2">
+        <form @submit.prevent="handleSearch" class="relative w-full mb-3">
           <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             v-model="searchKeyword"
             type="text"
-            placeholder="Tìm kiếm sự kiện..."
-            class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-sm text-slate-800"
+            placeholder="Tìm kiếm phim, sự kiện..."
+            class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
           />
         </form>
         <router-link
-          to="/events"
+          to="/"
           @click="mobileMenuOpen = false"
-          class="block px-3 py-2 rounded-lg text-slate-700 font-semibold text-sm hover:bg-slate-100"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
         >
-          Khám phá sự kiện
+          Trang chủ
         </router-link>
         <router-link
           to="/cinema"
           @click="mobileMenuOpen = false"
-          class="flex items-center justify-between px-3 py-2 rounded-lg text-rose-600 font-bold text-sm bg-rose-50/50 hover:bg-rose-100/60"
+          class="block px-3 py-2 rounded-lg text-blue-400 font-bold text-xs"
         >
-          <span class="flex items-center gap-2">
-            <Film class="w-4 h-4 text-rose-500" />
-            <span>Rạp Chiếu Phim (Cinema)</span>
-          </span>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-200 text-rose-800">Mới</span>
+          Phim chiếu rạp
         </router-link>
         <router-link
+          to="/cinemas"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
+        >
+          Rạp chiếu & Cụm rạp
+        </router-link>
+        <router-link
+          to="/events"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
+        >
+          Sự kiện nổi bật
+        </router-link>
+        <router-link
+          to="/promotions"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
+        >
+          Ưu đãi & Khuyến mãi
+        </router-link>
+        <router-link
+          to="/news"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
+        >
+          Tin tức điện ảnh
+        </router-link>
+        <router-link
+          to="/about"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
+        >
+          Về chúng tôi
+        </router-link>
+        <router-link
+          v-if="authStore.isAuthenticated"
           to="/my-tickets"
           @click="mobileMenuOpen = false"
-          class="block px-3 py-2 rounded-lg text-slate-700 font-semibold text-sm hover:bg-slate-100"
+          class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white font-bold text-xs"
         >
           Vé của tôi
         </router-link>
         <router-link
+          v-if="authStore.isAuthenticated && (authStore.isAdmin || authStore.isOrganizer || authStore.isStaff)"
           to="/dashboard"
           @click="mobileMenuOpen = false"
-          class="block px-3 py-2 rounded-lg text-indigo-700 font-bold text-sm bg-indigo-50/70"
+          class="block px-3 py-2 rounded-lg text-amber-400 font-bold text-xs"
         >
-          Quản trị & Báo cáo
+          Quản trị hệ thống
         </router-link>
       </div>
     </div>
 
-    <!-- SLIDE-OVER VERTICAL DRAWER (MENU DỌC ÁP DỤNG CHUNG CHO TẤT CẢ CÁC TRANG) -->
+    <!-- Slide-over Vertical Drawer (Accessible from "Menu" button) -->
     <Teleport to="body">
       <div v-if="verticalDrawerOpen" class="fixed inset-0 z-50 overflow-hidden">
-        <!-- Backdrop Blur -->
         <div
-          class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300"
+          class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
           @click="verticalDrawerOpen = false"
         ></div>
 
-        <!-- Vertical Sidebar Panel -->
-        <aside
-          class="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl flex flex-col justify-between overflow-y-auto z-50 transform transition-transform duration-300"
-        >
-          <!-- Top Header of Vertical Menu -->
-          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20">
-                <Ticket class="w-4 h-4 transform -rotate-12" />
+        <aside class="fixed inset-y-0 left-0 max-w-xs w-full bg-[#0B0F17] border-r border-[#1C2438] shadow-2xl flex flex-col justify-between overflow-y-auto z-50">
+          <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white">
+                <Play class="w-4 h-4 fill-white ml-0.5" />
               </div>
               <div>
-                <span class="text-base font-black text-slate-900">Event<span class="text-indigo-600">Hub</span></span>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menu Dọc Hệ Thống</p>
+                <span class="text-sm font-black text-white">Cine<span class="text-blue-500">Verse</span></span>
+                <p class="text-[9px] text-slate-400 uppercase">Hệ Thống Đặt Vé 2026</p>
               </div>
             </div>
-
             <button
               type="button"
               @click="verticalDrawerOpen = false"
-              class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer"
-              title="Đóng menu dọc"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
             >
-              <X class="w-5 h-5" />
+              <X class="w-4 h-4" />
             </button>
           </div>
 
-          <!-- Vertical Content Body -->
-          <div class="flex-1 p-4 space-y-6 overflow-y-auto">
-            <!-- User Status Card if Logged In -->
-            <div
-              v-if="authStore.isAuthenticated && authStore.user"
-              class="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/50 border border-indigo-100 shadow-2xs"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md shadow-indigo-600/20">
-                  {{ authStore.user.fullName.charAt(0) }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-extrabold text-xs text-slate-900 truncate">{{ authStore.user.fullName }}</p>
-                  <p class="text-[11px] text-slate-500 truncate">{{ authStore.user.email }}</p>
-                  <span class="inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-100/80 text-indigo-700 uppercase">
-                    <ShieldCheck class="w-3 h-3 text-indigo-600" />
-                    {{ authStore.user.role }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Group 1: ADMIN & BÁO CÁO (Khi đăng nhập quyền Admin/Organizer/Staff) -->
-            <div v-if="authStore.isAuthenticated && (authStore.isAdmin || authStore.isOrganizer || authStore.isStaff)" class="space-y-1.5">
-              <div class="flex items-center justify-between px-2 mb-2">
-                <p class="text-[11px] font-black uppercase tracking-wider text-indigo-600 flex items-center gap-1.5">
-                  <ShieldCheck class="w-3.5 h-3.5" />
-                  <span>Quản Trị & Điều Hành</span>
-                </p>
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              </div>
-
-              <router-link
-                to="/dashboard?tab=overview"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('overview') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <LayoutDashboard class="w-4 h-4" :class="isActiveAdminTab('overview') ? 'text-white' : 'text-indigo-600'" />
-                  <span>Tổng Quan KPI & Doanh Thu</span>
-                </div>
-                <ChevronRight class="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </router-link>
-
-              <router-link
-                to="/dashboard?tab=analytics"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('analytics') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <BarChart3 class="w-4 h-4" :class="isActiveAdminTab('analytics') ? 'text-white' : 'text-purple-600'" />
-                  <span>Phân Tích Chuyên Sâu</span>
-                </div>
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase" :class="isActiveAdminTab('analytics') ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700'">Mới</span>
-              </router-link>
-
-              <router-link
-                to="/dashboard?tab=events"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('events') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <Calendar class="w-4 h-4" :class="isActiveAdminTab('events') ? 'text-white' : 'text-emerald-600'" />
-                  <span>Quản Lý Sự Kiện</span>
-                </div>
-                <ChevronRight class="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </router-link>
-
-              <router-link
-                v-if="authStore.isAdmin"
-                to="/dashboard?tab=users"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('users') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <Users class="w-4 h-4" :class="isActiveAdminTab('users') ? 'text-white' : 'text-blue-600'" />
-                  <span>Quản Trị Người Dùng</span>
-                </div>
-                <ChevronRight class="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
-              </router-link>
-
-              <router-link
-                v-if="authStore.isAdmin"
-                to="/dashboard?tab=audit"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('audit') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <ShieldAlert class="w-4 h-4" :class="isActiveAdminTab('audit') ? 'text-white' : 'text-rose-600'" />
-                  <span>Nhật Ký Kiểm Toán (Audit)</span>
-                </div>
-                <span class="w-2 h-2 rounded-full" :class="isActiveAdminTab('audit') ? 'bg-emerald-300' : 'bg-emerald-500'"></span>
-              </router-link>
-
-              <router-link
-                to="/dashboard?tab=staff_scanner"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
-                :class="isActiveAdminTab('staff_scanner') ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'text-slate-700 hover:bg-slate-100 hover:text-emerald-700'"
-              >
-                <div class="flex items-center gap-2.5">
-                  <Ticket class="w-4 h-4" :class="isActiveAdminTab('staff_scanner') ? 'text-white' : 'text-emerald-600'" />
-                  <span>Trạm Soát Vé Tại Cổng (Live)</span>
-                </div>
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">Cổng</span>
-              </router-link>
-            </div>
-
-            <!-- Group 2: KHÁM PHÁ & SỰ KIỆN -->
-            <div class="space-y-1.5">
-              <p class="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 mb-2 flex items-center gap-1.5">
-                <Compass class="w-3.5 h-3.5 text-indigo-500" />
-                <span>Khám Phá Danh Mục</span>
-              </p>
-
+          <div class="flex-1 p-4 space-y-5 overflow-y-auto text-xs">
+            <!-- Nav Links -->
+            <div class="space-y-1">
+              <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 px-2 mb-1">Khám Phá</p>
               <router-link
                 to="/cinema"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black text-rose-700 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/80 transition group"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-blue-400 bg-blue-500/10 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Film class="w-4 h-4 text-rose-600" />
-                  <span>Rạp Phim & Bom Tấn Chiếu Rạp</span>
+                <div class="flex items-center gap-2">
+                  <Film class="w-4 h-4" />
+                  <span>Phim Chiếu Rạp (Cinema)</span>
                 </div>
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-600 text-white">Hot</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] bg-blue-600 text-white font-black">HOT</span>
               </router-link>
-
+              <router-link
+                to="/cinemas"
+                @click="verticalDrawerOpen = false"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
+              >
+                <div class="flex items-center gap-2">
+                  <Building2 class="w-4 h-4 text-cyan-400" />
+                  <span>Cụm Rạp Chiếu Toàn Quốc</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded text-[9px] bg-cyan-500/20 text-cyan-300 font-black">MỚI</span>
+              </router-link>
               <router-link
                 to="/events"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Compass class="w-4 h-4 text-indigo-600" />
-                  <span>Tất cả sự kiện</span>
+                <div class="flex items-center gap-2">
+                  <Compass class="w-4 h-4 text-blue-400" />
+                  <span>Sự Kiện & Concerts</span>
                 </div>
-                <span class="text-[10px] text-slate-400">Xem hết</span>
               </router-link>
-
               <router-link
-                to="/events?categoryId=1"
+                to="/promotions"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Music class="w-4 h-4 text-pink-500" />
-                  <span>Âm Nhạc & Concert</span>
+                <div class="flex items-center gap-2">
+                  <TicketPercent class="w-4 h-4 text-amber-400" />
+                  <span>Ưu Đãi & Khuyến Mãi</span>
                 </div>
-                <span class="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.5 rounded">Hot</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-300 font-black">GIẢM 50%</span>
               </router-link>
-
               <router-link
-                to="/events?categoryId=2"
+                to="/news"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Cpu class="w-4 h-4 text-indigo-500" />
-                  <span>Công Nghệ & Hội Thảo</span>
+                <div class="flex items-center gap-2">
+                  <Newspaper class="w-4 h-4 text-emerald-400" />
+                  <span>Tin Tức & Sự Kiện</span>
                 </div>
               </router-link>
-
               <router-link
-                to="/events?categoryId=3"
+                to="/about"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Trophy class="w-4 h-4 text-amber-500" />
-                  <span>Thể Thao & Giải Đấu</span>
+                <div class="flex items-center gap-2">
+                  <Info class="w-4 h-4 text-purple-400" />
+                  <span>Về Chúng Tôi</span>
                 </div>
               </router-link>
-
-              <router-link
-                to="/events?categoryId=4"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
-              >
-                <div class="flex items-center gap-2.5">
-                  <Palette class="w-4 h-4 text-purple-500" />
-                  <span>Sân Khấu & Triển Lãm</span>
-                </div>
-              </router-link>
-            </div>
-
-            <!-- Group 3: VÉ CỦA TÔI & TIỆN ÍCH -->
-            <div class="space-y-1.5">
-              <p class="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 mb-2 flex items-center gap-1.5">
-                <Ticket class="w-3.5 h-3.5 text-indigo-500" />
-                <span>Vé & Cá Nhân</span>
-              </p>
-
               <router-link
                 v-if="authStore.isAuthenticated"
-                to="/profile"
-                @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
-              >
-                <div class="flex items-center gap-2.5">
-                  <UserIcon class="w-4 h-4 text-indigo-600" />
-                  <span>Hồ sơ & Đổi mật khẩu</span>
-                </div>
-                <ChevronRight class="w-3.5 h-3.5 opacity-40" />
-              </router-link>
-
-              <router-link
                 to="/my-tickets"
                 @click="verticalDrawerOpen = false"
-                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-indigo-600 transition"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
               >
-                <div class="flex items-center gap-2.5">
-                  <Ticket class="w-4 h-4 text-indigo-600" />
+                <div class="flex items-center gap-2">
+                  <Ticket class="w-4 h-4 text-indigo-400" />
                   <span>Vé điện tử của tôi</span>
                 </div>
-                <span v-if="bookingStore.totalTicketCount > 0" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
-                  {{ bookingStore.totalTicketCount }}
-                </span>
               </router-link>
             </div>
 
-            <!-- System Monitor in Drawer -->
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-[11px] space-y-2">
-              <div class="flex items-center justify-between font-bold text-slate-700">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  VietQR Gateway
-                </span>
-                <span class="text-emerald-600">99.98% OK</span>
-              </div>
-              <div class="flex items-center justify-between text-slate-500">
-                <span>Hỗ trợ kỹ thuật 24/7</span>
-                <span class="font-bold text-indigo-600">1900 6868</span>
-              </div>
+            <!-- Admin Links if applicable -->
+            <div v-if="authStore.isAuthenticated && (authStore.isAdmin || authStore.isOrganizer || authStore.isStaff)" class="space-y-1">
+              <p class="text-[10px] font-black uppercase tracking-wider text-amber-400 px-2 mb-1">Quản Trị</p>
+              <router-link
+                to="/dashboard?tab=overview"
+                @click="verticalDrawerOpen = false"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
+              >
+                <div class="flex items-center gap-2">
+                  <LayoutDashboard class="w-4 h-4 text-amber-400" />
+                  <span>Tổng quan & KPI</span>
+                </div>
+              </router-link>
+              <router-link
+                to="/dashboard?tab=staff_scanner"
+                @click="verticalDrawerOpen = false"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-900 font-bold"
+              >
+                <div class="flex items-center gap-2">
+                  <Ticket class="w-4 h-4 text-emerald-400" />
+                  <span>Trạm soát vé cổng</span>
+                </div>
+              </router-link>
             </div>
           </div>
 
-          <!-- Bottom Footer of Vertical Menu -->
-          <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+          <div class="p-4 border-t border-slate-800">
             <template v-if="authStore.isAuthenticated">
               <button
                 type="button"
                 @click="handleLogout(); verticalDrawerOpen = false"
-                class="w-full py-2.5 px-4 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                class="w-full py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 border border-rose-500/30 text-xs font-bold transition flex items-center justify-center gap-2"
               >
                 <LogOut class="w-4 h-4" />
-                <span>Đăng xuất tài khoản</span>
+                <span>Đăng xuất</span>
               </button>
             </template>
             <template v-else>
@@ -682,14 +506,14 @@ const handleLogout = () => {
                 <router-link
                   to="/login"
                   @click="verticalDrawerOpen = false"
-                  class="py-2.5 px-3 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition"
+                  class="py-2 text-center rounded-xl bg-slate-900 text-slate-300 text-xs font-bold"
                 >
                   Đăng nhập
                 </router-link>
                 <router-link
                   to="/register"
                   @click="verticalDrawerOpen = false"
-                  class="py-2.5 px-3 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition"
+                  class="py-2 text-center rounded-xl bg-blue-600 text-white text-xs font-bold"
                 >
                   Đăng ký
                 </router-link>

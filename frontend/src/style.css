@@ -7,82 +7,74 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #070a12;
+    color: #f1f5f9;
     min-height: 100vh;
     overflow-x: hidden;
   }
 }
 
-/* Light Theme Clean Surfaces & Cards */
-.clean-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+/* Dark Theme Surfaces & Cards matching CineVerse / Image 2 */
+.dark-card {
+  background: #0d121f;
+  border: 1px solid #1c2438;
+  border-radius: 1rem;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.clean-card:hover {
+.dark-card:hover {
   transform: translateY(-4px);
-  border-color: #cbd5e1;
-  box-shadow: 0 12px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+  border-color: #3b82f6;
+  box-shadow: 0 12px 30px -5px rgba(59, 130, 246, 0.15);
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #4338ca 0%, #6366f1 50%, #d946ef 100%);
+.dark-card-subtle {
+  background: #111827;
+  border: 1px solid #1f293d;
+}
+
+.dark-card-subtle:hover {
+  border-color: #3b82f6;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #818cf8 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+.btn-primary-blue {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: #ffffff;
   font-weight: 700;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
   transition: all 0.2s ease;
 }
 
-.btn-primary:hover {
-  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-  box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.35);
+.btn-primary-blue:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.5);
   transform: translateY(-1px);
 }
-
-.badge-soft-indigo {
-  background-color: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
+.font-handwriting {
+  font-family: 'Caveat', cursive;
 }
-
-.badge-soft-emerald {
-  background-color: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.badge-soft-rose {
-  background-color: #fff1f2;
-  color: #9f1239;
-  border: 1px solid #fecdd3;
-}
-
-.badge-soft-amber {
-  background-color: #fffbeb;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-/* Custom Scrollbar for Light Theme */
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #070a12;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #1e293b;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #3b82f6;
 }

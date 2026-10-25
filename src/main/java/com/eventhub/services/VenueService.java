@@ -1,5 +1,6 @@
 package com.eventhub.services;
 
+import com.eventhub.dto.request.ConfigureVenueLayoutRequest;
 import com.eventhub.dto.request.CreateVenueRequest;
 import com.eventhub.dto.response.VenueResponse;
 
@@ -14,4 +15,6 @@ public interface VenueService {
     VenueResponse getVenueById(Long id);
 
     void deleteVenue(Long id);
+
+    VenueResponse configureVenueLayout(Long id, ConfigureVenueLayoutRequest request);
 }

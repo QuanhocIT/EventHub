@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -51,6 +52,17 @@ public class VenueController {
         VenueResponse createdVenue = venueService.createVenue(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Venue created successfully", createdVenue));
+    }
+
+    @Operation(summary = "Configure custom physical seating layout for a venue", description = "Requires ORGANIZER or ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))
+    @PutMapping("/{id}/layout")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<VenueResponse>> configureLayout(
+            @PathVariable Long id,
+            @Valid @RequestBody com.eventhub.dto.request.ConfigureVenueLayoutRequest request
+    ) {
+        VenueResponse response = venueService.configureVenueLayout(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Venue seating layout updated successfully", response));
     }
 
     @Operation(summary = "Delete venue by ID", description = "Requires ADMIN role", security = @SecurityRequirement(name = "BearerAuth"))

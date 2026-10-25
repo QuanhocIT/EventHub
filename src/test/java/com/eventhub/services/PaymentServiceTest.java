@@ -207,7 +207,7 @@ class PaymentServiceTest {
         assertThat(eventSeat.getStatus()).isEqualTo(EventSeatStatus.SOLD);
         verify(redisTemplate).delete("seat_hold:10:50");
         verify(ticketService).generateTicketsForBooking(pendingBooking);
-        verify(eventPublisher).publishEvent(any(Object.class));
+        verify(eventPublisher).publishEvent(any(com.eventhub.events.BookingConfirmedEvent.class));
     }
 
     @Test
@@ -278,5 +278,49 @@ class PaymentServiceTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getTransactionCode()).isEqualTo("TXN-VIEW");
+    }
+
+    @Test
+    @DisplayName("Should simulate IPN webhook and confirm payment automatically")
+    void simulateInstantPaymentNotification_Success() {
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(pendingBooking)
+                .transactionCode("TXN-IPN-123")
+                .amount(new BigDecimal("500000"))
+                .status(PaymentStatus.PENDING)
+                .build();
+
+        when(paymentRepository.findByTransactionCode("TXN-IPN-123")).thenReturn(Optional.of(payment));
+        when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentResponse response = paymentService.simulateInstantPaymentNotification("TXN-IPN-123");
+
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(pendingBooking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(eventSeat.getStatus()).isEqualTo(EventSeatStatus.SOLD);
+        verify(ticketService).generateTicketsForBooking(pendingBooking);
+        verify(eventPublisher).publishEvent(any(com.eventhub.events.BookingConfirmedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should poll payment status by transaction code")
+    void getPaymentStatusByTransactionCode_Success() {
+        Payment payment = Payment.builder()
+                .id(1L)
+                .booking(pendingBooking)
+                .transactionCode("TXN-POLL-123")
+                .amount(new BigDecimal("500000"))
+                .status(PaymentStatus.SUCCESS)
+                .build();
+
+        when(paymentRepository.findByTransactionCode("TXN-POLL-123")).thenReturn(Optional.of(payment));
+
+        PaymentResponse response = paymentService.getPaymentStatusByTransactionCode("TXN-POLL-123", "john_doe", false);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getTransactionCode()).isEqualTo("TXN-POLL-123");
+        assertThat(response.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
     }
 }

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 
-@Tag(name = "Payments", description = "Payment management and sandbox processing APIs")
+@Tag(name = "Payments", description = "Multi-provider payment management, VietQR dynamic checkout and IPN webhook processing")
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -31,8 +31,8 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @Operation(summary = "Initiate payment for a pending booking")
-    @PostMapping("/create")
+    @Operation(summary = "Initiate payment for a pending booking (VietQR, MoMo, VNPay, Sandbox)")
+    @PostMapping(value = {"", "/create"})
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
             @Valid @RequestBody CreatePaymentRequest request,
@@ -66,6 +66,30 @@ public class PaymentController {
 
         PaymentResponse response = paymentService.processPayment(request, principal.getName(), isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Payment processed successfully", response));
+    }
+
+    @Operation(summary = "Poll payment status by transaction code")
+    @GetMapping("/status/{transactionCode}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(
+            @PathVariable String transactionCode,
+            Principal principal,
+            Authentication authentication
+    ) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        PaymentResponse response = paymentService.getPaymentStatusByTransactionCode(transactionCode, principal.getName(), isAdmin);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Simulate Instant Payment Notification (IPN) webhook from banking/e-wallet gateway")
+    @PostMapping("/simulate-ipn/{transactionCode}")
+    public ResponseEntity<ApiResponse<PaymentResponse>> simulateIpn(
+            @PathVariable String transactionCode
+    ) {
+        PaymentResponse response = paymentService.simulateInstantPaymentNotification(transactionCode);
+        return ResponseEntity.ok(ApiResponse.success("Payment verified and confirmed via IPN webhook", response));
     }
 
     @Operation(summary = "Get payment details for a booking")

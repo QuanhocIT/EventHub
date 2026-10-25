@@ -31,6 +31,15 @@ import {
   AlertCircle,
   Heart,
   QrCode,
+  ThumbsUp,
+  MessageSquare,
+  Send,
+  User,
+  Share2,
+  CheckCircle2,
+  Info,
+  ShieldAlert,
+  Award,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -42,6 +51,113 @@ const showtimes = ref<Showtime[]>([])
 const concessions = ref<ConcessionItem[]>([])
 const loading = ref(true)
 const loadingShowtimes = ref(false)
+
+// Reviews & Comments State
+interface MovieReview {
+  id: number
+  userName: string
+  userAvatar: string
+  rating: number
+  date: string
+  theaterWatched?: string
+  content: string
+  likes: number
+  isLiked?: boolean
+}
+
+const reviews = ref<MovieReview[]>([
+  {
+    id: 1,
+    userName: 'Minh Quân (Vip CineClub)',
+    userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    rating: 5,
+    date: '24/10/2026',
+    theaterWatched: 'CineVerse Landmark 81 IMAX Laser',
+    content: 'Phim quá đỉnh! Kỹ xảo hình ảnh và âm thanh của Ufotable đưa lên màn chiếu IMAX Laser thực sự choáng ngợp. Từng đường kiếm chuyển động mượt mà không góc chết, âm bass rung chuyển cả phòng chiếu. Chắc chắn sẽ xem lại lần 2!',
+    likes: 142,
+  },
+  {
+    id: 2,
+    userName: 'Thanh Hà',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+    rating: 5,
+    date: '23/10/2026',
+    theaterWatched: 'CGV Vincom Đồng Khởi',
+    content: 'Đoạn mở đầu Vô Hạn Thành thực sự là kiệt tác nghệ thuật CGI. Cảm xúc dâng trào trong từng câu thoại, âm nhạc cất lên là nổi da gà. Các bạn nên chọn hàng ghế giữa để tận hưởng trọn vẹn màn hình!',
+    likes: 89,
+  },
+  {
+    id: 3,
+    userName: 'Đức Anh Media',
+    userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&q=80',
+    rating: 4.5,
+    date: '22/10/2026',
+    theaterWatched: 'CineVerse Bà Triệu',
+    content: 'Xứng đáng là bom tấn chiếu rạp số 1 năm nay. Nhịp phim nhanh, nghẹt thở từ phút đầu tiên tới cuối cùng. Khuyến khích mọi người đi xem phòng chiếu Dolby Atmos hoặc IMAX để có trải nghiệm tốt nhất.',
+    likes: 67,
+  },
+])
+
+const newCommentRating = ref(5)
+const newCommentText = ref('')
+const newCommentName = ref('')
+
+const handleAddComment = () => {
+  if (!newCommentText.value.trim()) return
+  const userName = authStore.user?.fullName || newCommentName.value.trim() || 'Khán giả CineVerse'
+  const newRev: MovieReview = {
+    id: Date.now(),
+    userName,
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    rating: newCommentRating.value,
+    date: 'Vừa xong',
+    theaterWatched: 'Suất chiếu trực tuyến EventHub',
+    content: newCommentText.value.trim(),
+    likes: 0,
+  }
+  reviews.value.unshift(newRev)
+  newCommentText.value = ''
+  newCommentName.value = ''
+  alert('Cảm ơn bạn đã gửi đánh giá! Bình luận của bạn đã được xuất bản.')
+}
+
+const toggleLikeReview = (review: MovieReview) => {
+  if (review.isLiked) {
+    review.likes--
+    review.isLiked = false
+  } else {
+    review.likes++
+    review.isLiked = true
+  }
+}
+
+// Cast list based on movie title
+const castList = computed(() => {
+  if (!movie.value) return []
+  if (movie.value.title.includes('Thanh Gươm') || movie.value.title.includes('Demon Slayer')) {
+    return [
+      { name: 'Natsuki Hanae', role: 'Kamado Tanjiro', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Akari Kito', role: 'Kamado Nezuko', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Hiro Shimono', role: 'Agatsuma Zenitsu', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Yoshitsugu Matsuoka', role: 'Hashibira Inosuke', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Toshihiko Seki', role: 'Kibutsuji Muzan', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80' },
+    ]
+  }
+  if (movie.value.title.includes('F1')) {
+    return [
+      { name: 'Brad Pitt', role: 'Sonny Hayes', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Damson Idris', role: 'Joshua Pearce', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Javier Bardem', role: 'Chủ đội APXGP', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80' },
+      { name: 'Kerry Condon', role: 'Kỹ sư trưởng Kate', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80' },
+    ]
+  }
+  const actors = movie.value.actorsCast ? movie.value.actorsCast.split(',').map((s) => s.trim()) : ['Diễn viên chính']
+  return actors.map((name, i) => ({
+    name,
+    role: `Diễn viên chính ${i + 1}`,
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+  }))
+})
 
 // Date filter pills (Next 5 days)
 const today = new Date()
@@ -321,38 +437,49 @@ const getRatingColor = (code?: string) => {
     case 'T18':
       return 'bg-rose-600 text-white border-rose-700'
     case 'T16':
-      return 'bg-amber-500 text-white border-amber-600'
+      return 'bg-orange-600 text-white border-orange-700'
     case 'T13':
-      return 'bg-yellow-400 text-slate-900 border-yellow-500'
+      return 'bg-amber-500 text-slate-950 border-amber-600'
+    case 'P':
+      return 'bg-emerald-600 text-white border-emerald-700'
     case 'K':
       return 'bg-blue-600 text-white border-blue-700'
-    case 'P':
     default:
-      return 'bg-emerald-600 text-white border-emerald-700'
+      return 'bg-slate-700 text-white border-slate-600'
   }
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100 selection:bg-rose-500 selection:text-white">
+  <div class="min-h-screen bg-[#030712] text-slate-100 selection:bg-rose-500 selection:text-white relative overflow-hidden">
+    <!-- Ambient Cinematic Lighting Gradient Meshes -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+      <!-- Top Cinema Ceiling Light Cone -->
+      <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[1000px] h-[550px] bg-[radial-gradient(ellipse_at_center,rgba(244,63,94,0.11),rgba(99,102,241,0.08),transparent_70%)]"></div>
+      <div class="absolute -top-40 left-1/4 w-[650px] h-[650px] bg-rose-600/[0.08] rounded-full blur-[150px]"></div>
+      <div class="absolute top-1/3 -right-40 w-[650px] h-[650px] bg-indigo-600/[0.07] rounded-full blur-[160px]"></div>
+      <div class="absolute bottom-10 left-10 w-[550px] h-[550px] bg-cyan-600/[0.06] rounded-full blur-[150px]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.03]"></div>
+    </div>
+
     <!-- Loading State -->
-    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-20 text-center space-y-4">
+    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-20 text-center space-y-4 relative z-10">
       <div class="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
       <p class="text-sm text-slate-400">Đang tải thông tin phim và suất chiếu...</p>
     </div>
 
     <!-- Movie Content -->
-    <div v-else-if="movie" class="space-y-10 pb-20">
+    <div v-else-if="movie" class="space-y-10 pb-20 relative z-10">
       <!-- Movie Hero Backdrop Header -->
-      <section class="relative overflow-hidden border-b border-slate-800 bg-slate-900 pt-8 pb-12 sm:pb-16">
+      <section class="relative overflow-hidden border-b border-white/[0.08] bg-gradient-to-b from-[#0c1328]/95 via-[#080d1e]/90 to-[#030712] pt-8 pb-12 sm:pb-16">
         <div class="absolute inset-0 z-0">
           <img
             :src="movie.bannerUrl || movie.posterUrl"
             :alt="movie.title"
-            class="w-full h-full object-cover object-center opacity-25 filter blur-xs scale-105"
+            class="w-full h-full object-cover object-center opacity-30 filter blur-[1px] scale-105"
           />
-          <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/60"></div>
-          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-[#030712] via-[#030712]/90 to-[#030712]/60"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent"></div>
         </div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -373,13 +500,13 @@ const getRatingColor = (code?: string) => {
                 <img
                   :src="movie.posterUrl"
                   :alt="movie.title"
-                  class="w-56 sm:w-64 rounded-2xl shadow-2xl object-cover aspect-[2/3] border border-slate-800"
+                  class="w-56 sm:w-64 rounded-2xl shadow-2xl object-cover aspect-[2/3] border border-white/[0.08]"
                 />
                 <button
                   v-if="movie.trailerUrl"
                   type="button"
                   @click="trailerModalOpen = true"
-                  class="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer"
+                  class="absolute inset-0 bg-black/60 backdrop-blur-2xs flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer"
                 >
                   <div class="w-14 h-14 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
                     <Play class="w-6 h-6 fill-white ml-1" />
@@ -402,7 +529,7 @@ const getRatingColor = (code?: string) => {
                   <span v-if="movie.ageRatingDesc" class="text-xs text-slate-400">
                     ({{ movie.ageRatingDesc }})
                   </span>
-                  <span v-if="movie.formatDisplay" class="px-2 py-0.5 rounded bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 text-xs uppercase font-extrabold">
+                  <span v-if="movie.formatDisplay" class="px-2.5 py-0.5 rounded bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 text-xs uppercase font-extrabold">
                     {{ movie.formatDisplay }}
                   </span>
                 </div>
@@ -431,13 +558,13 @@ const getRatingColor = (code?: string) => {
               <!-- Synopsis -->
               <div class="space-y-1.5 max-w-3xl">
                 <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Nội dung phim</h4>
-                <p class="text-sm text-slate-300 leading-relaxed">
+                <p class="text-sm text-slate-300/90 leading-relaxed">
                   {{ movie.description }}
                 </p>
               </div>
 
               <!-- Details Grid -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300 pt-2 border-t border-slate-800/80 max-w-2xl">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300 pt-2 border-t border-white/[0.08] max-w-2xl">
                 <p><strong class="text-slate-400">Đạo diễn:</strong> {{ movie.director || 'Chưa cập nhật' }}</p>
                 <p><strong class="text-slate-400">Ngôn ngữ:</strong> {{ movie.language || 'Phụ đề tiếng Việt' }}</p>
                 <p class="sm:col-span-2"><strong class="text-slate-400">Diễn viên:</strong> {{ movie.actorsCast || 'Chưa cập nhật' }}</p>
@@ -448,7 +575,7 @@ const getRatingColor = (code?: string) => {
                 <button
                   type="button"
                   @click="trailerModalOpen = true"
-                  class="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-2 cursor-pointer hover:border-slate-500"
+                  class="px-4 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.08] text-slate-200 font-bold text-xs transition flex items-center gap-2 cursor-pointer hover:border-slate-600 shadow-md"
                 >
                   <Play class="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
                   <span>Xem Trailer Chính Thức</span>
@@ -459,115 +586,393 @@ const getRatingColor = (code?: string) => {
         </div>
       </section>
 
-      <!-- Showtime Matrix Section -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-              <Calendar class="w-6 h-6 text-rose-500" />
-              <span>Lịch Chiếu Phim Tại Rạp</span>
-            </h2>
-            <p class="text-xs text-slate-400 mt-1">Chọn ngày và cụm rạp để hiển thị các suất chiếu khả dụng</p>
-          </div>
+      <!-- ================= 2-COLUMN MAIN CONTENT (70% TRÁI / 30% PHẢI) ================= -->
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          <!-- City Filter -->
-          <select
-            v-model="selectedCity"
-            class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 focus:outline-none focus:border-rose-500 cursor-pointer"
-          >
-            <option value="ALL">Tất cả thành phố</option>
-            <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
-            <option value="Hà Nội">Hà Nội</option>
-          </select>
-        </div>
+          <!-- ================= CỘT TRÁI: 70% (LG:COL-SPAN-8) ================= -->
+          <div class="lg:col-span-8 space-y-10">
 
-        <!-- Date Selector Pills -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <button
-            v-for="opt in dateOptions"
-            :key="opt.iso"
-            type="button"
-            @click="selectedDate = opt.iso"
-            class="px-4 py-2.5 rounded-2xl border text-center shrink-0 transition flex flex-col items-center gap-0.5 cursor-pointer min-w-[90px]"
-            :class="selectedDate === opt.iso
-              ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-600/30'
-              : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'"
-          >
-            <span class="text-[11px] font-bold opacity-80 uppercase">{{ opt.label }}</span>
-            <span class="text-sm font-black">{{ opt.displayDate }}</span>
-          </button>
-        </div>
-
-        <!-- Showtime Loading State -->
-        <div v-if="loadingShowtimes" class="py-12 text-center text-slate-400 space-y-2">
-          <div class="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p class="text-xs">Đang tải suất chiếu...</p>
-        </div>
-
-        <!-- Empty Showtimes -->
-        <div v-else-if="showtimesByComplex.length === 0" class="rounded-2xl bg-slate-900 border border-slate-800 p-10 text-center space-y-3">
-          <Clock class="w-10 h-10 text-slate-600 mx-auto" />
-          <h3 class="text-base font-bold text-slate-400">Không có suất chiếu nào trong ngày đã chọn</h3>
-          <p class="text-xs text-slate-500">Vui lòng chọn ngày chiếu khác hoặc đổi thành phố để xem thêm suất chiếu.</p>
-        </div>
-
-        <!-- Showtime Groups by Complex -->
-        <div v-else class="space-y-6">
-          <div
-            v-for="complex in showtimesByComplex"
-            :key="complex.complexId"
-            class="rounded-2xl bg-slate-900 border border-slate-800 p-5 sm:p-6 space-y-5"
-          >
-            <!-- Complex Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-              <div class="space-y-1">
-                <h3 class="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
-                  <MapPin class="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>{{ complex.complexName }}</span>
-                </h3>
-                <span class="text-xs text-slate-400">{{ complex.city }}</span>
-              </div>
-              <span class="text-[11px] font-extrabold px-2.5 py-1 rounded bg-slate-800 text-indigo-400 border border-slate-700 self-start sm:self-auto">
-                Ghế Sweetbox & VIP Khả dụng
-              </span>
-            </div>
-
-            <!-- Formats and Showtime Chips -->
-            <div class="space-y-4">
-              <div
-                v-for="[formatName, showtimesList] in complex.formats.entries()"
-                :key="formatName"
-                class="space-y-2.5"
-              >
-                <!-- Format Title -->
-                <div class="flex items-center gap-2 text-xs font-black uppercase text-indigo-400">
-                  <Monitor class="w-3.5 h-3.5" />
-                  <span>{{ formatName.replace('_', ' ') }}</span>
+            <!-- 1. LỊCH CHIẾU PHIM TẠI RẠP -->
+            <div class="space-y-6">
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                <div>
+                  <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                    <Calendar class="w-6 h-6 text-rose-500" />
+                    <span>Lịch Chiếu Phim Tại Rạp</span>
+                  </h2>
+                  <p class="text-xs text-slate-400 mt-1">Chọn ngày và cụm rạp để hiển thị các suất chiếu khả dụng</p>
                 </div>
 
-                <!-- Showtime Chips -->
-                <div class="flex flex-wrap gap-3">
+                <!-- City Filter -->
+                <select
+                  v-model="selectedCity"
+                  class="px-3.5 py-2 rounded-xl bg-[#060a18] border border-white/[0.1] text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm"
+                >
+                  <option value="ALL">Tất cả thành phố</option>
+                  <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                  <option value="Hà Nội">Hà Nội</option>
+                </select>
+              </div>
+
+              <!-- Date Selector Pills -->
+              <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <button
+                  v-for="opt in dateOptions"
+                  :key="opt.iso"
+                  type="button"
+                  @click="selectedDate = opt.iso"
+                  class="px-4 py-2.5 rounded-2xl border text-center shrink-0 transition flex flex-col items-center gap-0.5 cursor-pointer min-w-[90px]"
+                  :class="selectedDate === opt.iso
+                    ? 'bg-gradient-to-r from-rose-600 to-indigo-600 border-rose-400 text-white shadow-lg shadow-rose-600/30'
+                    : 'bg-[#070b1a] border-white/[0.08] text-slate-300 hover:border-cyan-500/40 hover:text-white hover:bg-[#0c142c]'"
+                >
+                  <span class="text-[11px] font-bold opacity-80 uppercase">{{ opt.label }}</span>
+                  <span class="text-sm font-black">{{ opt.displayDate }}</span>
+                </button>
+              </div>
+
+              <!-- Showtime Loading State -->
+              <div v-if="loadingShowtimes" class="py-12 text-center text-slate-400 space-y-2">
+                <div class="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p class="text-xs">Đang tải suất chiếu...</p>
+              </div>
+
+              <!-- Empty Showtimes -->
+              <div v-else-if="showtimesByComplex.length === 0" class="rounded-3xl bg-[#080d1f]/80 border border-white/[0.08] p-10 text-center space-y-3 backdrop-blur-md">
+                <Clock class="w-10 h-10 text-slate-500 mx-auto" />
+                <h3 class="text-base font-bold text-slate-200">Không có suất chiếu nào trong ngày đã chọn</h3>
+                <p class="text-xs text-slate-400">Vui lòng chọn ngày chiếu khác hoặc đổi thành phố để xem thêm suất chiếu.</p>
+              </div>
+
+              <!-- Showtime Groups by Complex -->
+              <div v-else class="space-y-5">
+                <div
+                  v-for="complex in showtimesByComplex"
+                  :key="complex.complexId"
+                  class="rounded-3xl bg-gradient-to-br from-[#0c1633]/90 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] p-5 sm:p-6 space-y-5 hover:border-cyan-500/40 backdrop-blur-xl shadow-2xl transition duration-300"
+                >
+                  <!-- Complex Header -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+                    <div class="space-y-1">
+                      <h3 class="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                        <MapPin class="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>{{ complex.complexName }}</span>
+                      </h3>
+                      <span class="text-xs text-slate-400">{{ complex.city }}</span>
+                    </div>
+                    <span class="text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 self-start sm:self-auto">
+                      Ghế Sweetbox &amp; VIP Khả dụng
+                    </span>
+                  </div>
+
+                  <!-- Formats and Showtime Chips -->
+                  <div class="space-y-4">
+                    <div
+                      v-for="[formatName, showtimesList] in complex.formats.entries()"
+                      :key="formatName"
+                      class="space-y-2.5"
+                    >
+                      <!-- Format Title -->
+                      <div class="flex items-center gap-2 text-xs font-black uppercase text-cyan-400">
+                        <Monitor class="w-3.5 h-3.5" />
+                        <span>{{ formatName.replace('_', ' ') }}</span>
+                      </div>
+
+                      <!-- Showtime Chips -->
+                      <div class="flex flex-wrap gap-2.5">
+                        <button
+                          v-for="st in showtimesList"
+                          :key="st.id"
+                          type="button"
+                          @click="openBookingFlow(st)"
+                          class="group px-4 py-2.5 rounded-xl bg-[#050814] border border-white/[0.09] hover:border-rose-500 hover:bg-gradient-to-b hover:from-rose-600 hover:to-indigo-600 transition flex flex-col items-center gap-0.5 cursor-pointer min-w-[95px] shadow-sm hover:shadow-lg hover:shadow-rose-600/30"
+                        >
+                          <span class="text-sm font-black text-white group-hover:text-white transition-colors">
+                            {{ formatTime(st.startTime) }}
+                          </span>
+                          <span class="text-[10px] text-slate-400 group-hover:text-rose-100">
+                            ~{{ formatTime(st.endTime) }}
+                          </span>
+                          <span class="text-[10px] font-extrabold text-amber-400 group-hover:text-amber-200 mt-0.5">
+                            {{ formatCurrency(st.basePrice) }}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. ĐÁNH GIÁ & BÌNH LUẬN KHÁN GIẢ (REVIEWS & COMMENTS) -->
+            <div class="space-y-6 pt-6 border-t border-white/[0.08]">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 class="text-xl font-black text-white flex items-center gap-2">
+                    <MessageSquare class="w-5 h-5 text-amber-400" />
+                    <span>Đánh Giá &amp; Bình Luận Khán GiẢ</span>
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-0.5">Đánh giá thực tế từ khán giả đã xem phim tại hệ thống rạp</p>
+                </div>
+
+                <span class="text-xs text-slate-400">
+                  Tổng cộng: <strong class="text-white">{{ reviews.length + 324 }}</strong> đánh giá
+                </span>
+              </div>
+
+              <!-- Rating Score Overview Card -->
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 p-5 rounded-3xl bg-gradient-to-br from-[#0c1633]/85 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] items-center backdrop-blur-xl shadow-xl">
+                <!-- Average Score Left -->
+                <div class="sm:col-span-4 text-center sm:border-r border-white/[0.08] sm:pr-4 space-y-1">
+                  <p class="text-4xl sm:text-5xl font-black text-white flex items-center justify-center gap-1">
+                    <span>{{ movie?.imdbRating || 9.8 }}</span>
+                    <span class="text-lg font-bold text-slate-500">/ 10</span>
+                  </p>
+                  <div class="flex items-center justify-center gap-1 text-amber-400">
+                    <Star class="w-4 h-4 fill-amber-400" />
+                    <Star class="w-4 h-4 fill-amber-400" />
+                    <Star class="w-4 h-4 fill-amber-400" />
+                    <Star class="w-4 h-4 fill-amber-400" />
+                    <Star class="w-4 h-4 fill-amber-400" />
+                  </div>
+                  <p class="text-[11px] text-slate-400 font-semibold">Khuyên xem trên màn chiếu lớn</p>
+                </div>
+
+                <!-- Rating Bars Right -->
+                <div class="sm:col-span-8 space-y-1.5 text-xs text-slate-300">
+                  <div class="flex items-center gap-2">
+                    <span class="w-12 text-[11px] text-slate-400">5 sao</span>
+                    <div class="flex-1 h-2 rounded-full bg-[#050814] overflow-hidden">
+                      <div class="h-full bg-amber-400 rounded-full" style="width: 92%"></div>
+                    </div>
+                    <span class="w-8 text-[11px] text-right text-slate-400">92%</span>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="w-12 text-[11px] text-slate-400">4 sao</span>
+                    <div class="flex-1 h-2 rounded-full bg-[#050814] overflow-hidden">
+                      <div class="h-full bg-amber-400 rounded-full" style="width: 6%"></div>
+                    </div>
+                    <span class="w-8 text-[11px] text-right text-slate-400">6%</span>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <span class="w-12 text-[11px] text-slate-400">3 sao</span>
+                    <div class="flex-1 h-2 rounded-full bg-[#050814] overflow-hidden">
+                      <div class="h-full bg-amber-400 rounded-full" style="width: 2%"></div>
+                    </div>
+                    <span class="w-8 text-[11px] text-right text-slate-400">2%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Write Review Box -->
+              <div class="p-5 rounded-3xl bg-gradient-to-br from-[#0c1633]/85 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] space-y-3.5 backdrop-blur-xl shadow-xl">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <Sparkles class="w-3.5 h-3.5 text-rose-500" />
+                    <span>Viết cảm nhận của bạn về bộ phim:</span>
+                  </h4>
+
+                  <!-- Star Selector -->
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs text-slate-400 mr-1">Chấm điểm:</span>
+                    <button
+                      v-for="s in [1, 2, 3, 4, 5]"
+                      :key="s"
+                      type="button"
+                      @click="newCommentRating = s"
+                      class="text-amber-400 hover:scale-125 transition cursor-pointer"
+                    >
+                      <Star
+                        class="w-4 h-4"
+                        :class="s <= newCommentRating ? 'fill-amber-400' : 'text-slate-600'"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="!authStore.isAuthenticated" class="relative">
+                  <input
+                    v-model="newCommentName"
+                    type="text"
+                    placeholder="Họ và tên hoặc biệt danh của bạn..."
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-[#040711] border border-white/[0.1] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 shadow-inner"
+                  />
+                </div>
+
+                <textarea
+                  v-model="newCommentText"
+                  rows="3"
+                  placeholder="Chia sẻ cảm xúc của bạn về hình ảnh, diễn xuất, âm nhạc của bộ phim..."
+                  class="w-full p-3.5 rounded-xl bg-[#040711] border border-white/[0.1] text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition resize-none shadow-inner"
+                ></textarea>
+
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-[11px] text-slate-400">Bình luận tuân thủ quy chuẩn văn minh cộng đồng</span>
                   <button
-                    v-for="st in showtimesList"
-                    :key="st.id"
                     type="button"
-                    @click="openBookingFlow(st)"
-                    class="group px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-rose-500 hover:bg-slate-900 transition flex flex-col items-center gap-0.5 cursor-pointer min-w-[95px] shadow-sm hover:shadow-md hover:shadow-rose-950/40"
+                    @click="handleAddComment"
+                    class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/30"
                   >
-                    <span class="text-sm font-black text-white group-hover:text-rose-400 transition-colors">
-                      {{ formatTime(st.startTime) }}
-                    </span>
-                    <span class="text-[10px] text-slate-400">
-                      ~{{ formatTime(st.endTime) }}
-                    </span>
-                    <span class="text-[10px] font-extrabold text-amber-400 mt-0.5">
-                      {{ formatCurrency(st.basePrice) }}
-                    </span>
+                    <Send class="w-3.5 h-3.5" />
+                    <span>Gửi Đánh Giá</span>
                   </button>
                 </div>
               </div>
+
+              <!-- Reviews List -->
+              <div class="space-y-3.5">
+                <div
+                  v-for="rev in reviews"
+                  :key="rev.id"
+                  class="p-4 rounded-2xl bg-[#080d1f]/85 border border-white/[0.08] hover:border-cyan-500/30 space-y-2.5 transition shadow-sm backdrop-blur-md"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      <img :src="rev.userAvatar" :alt="rev.userName" class="w-9 h-9 rounded-full object-cover border border-white/[0.1]" />
+                      <div>
+                        <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>{{ rev.userName }}</span>
+                          <span v-if="rev.theaterWatched" class="text-[10px] text-slate-400 font-normal hidden sm:inline">
+                            &bull; Xem tại {{ rev.theaterWatched }}
+                          </span>
+                        </p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                          <div class="flex items-center gap-0.5 text-amber-400">
+                            <Star v-for="i in Math.floor(rev.rating)" :key="i" class="w-3 h-3 fill-amber-400" />
+                          </div>
+                          <span class="text-[10px] text-slate-400">{{ rev.date }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Like Button -->
+                    <button
+                      type="button"
+                      @click="toggleLikeReview(rev)"
+                      class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer"
+                      :class="rev.isLiked ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-[#040711] border-white/[0.08] text-slate-400 hover:text-white'"
+                    >
+                      <ThumbsUp class="w-3.5 h-3.5" :class="rev.isLiked ? 'fill-rose-400' : ''" />
+                      <span>{{ rev.likes }}</span>
+                    </button>
+                  </div>
+
+                  <p class="text-xs text-slate-300/90 leading-relaxed pl-12">
+                    {{ rev.content }}
+                  </p>
+                </div>
+              </div>
             </div>
+
           </div>
+
+          <!-- ================= CỘT PHẢI: 30% (LG:COL-SPAN-4) ================= -->
+          <aside class="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+
+            <!-- 1. TÓM TẮT NỘI DUNG & ĐIỂM NHẤN CỐT TRUYỆN -->
+            <div class="p-5 rounded-3xl bg-gradient-to-br from-[#0c1633]/90 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] space-y-3.5 backdrop-blur-xl shadow-xl">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-white/[0.08] pb-3">
+                <Film class="w-4 h-4 text-cyan-400" />
+                <span>Tóm Tắt Cốt Truyện &amp; Điểm Nhấn</span>
+              </h3>
+
+              <div class="space-y-3 text-xs leading-relaxed text-slate-300">
+                <p>
+                  {{ movie?.description }}
+                </p>
+
+                <div class="space-y-2 pt-2 border-t border-white/[0.06]">
+                  <p class="font-bold text-white">Điểm nhấn nổi bật:</p>
+                  <div class="space-y-1.5 text-slate-400">
+                    <p class="flex items-start gap-2">
+                      <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>Đồ họa &amp; hiệu ứng hình ảnh chuẩn điện ảnh quốc tế.</span>
+                    </p>
+                    <p class="flex items-start gap-2">
+                      <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>Âm thanh vòm Dolby Atmos tái hiện chi tiết từng pha hành động.</span>
+                    </p>
+                    <p class="flex items-start gap-2">
+                      <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>Trải nghiệm trọn vẹn nhất trên các màn chiếu cực đại IMAX Laser.</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. DÀN DIỄN VIÊN & NHÂN VẬT NỔI BẬT -->
+            <div class="p-5 rounded-3xl bg-gradient-to-br from-[#0c1633]/90 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] space-y-3.5 backdrop-blur-xl shadow-xl">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-white/[0.08] pb-3">
+                <User class="w-4 h-4 text-indigo-400" />
+                <span>Diễn Viên &amp; Nhân Vật</span>
+              </h3>
+
+              <div class="space-y-2.5">
+                <div
+                  v-for="(actor, idx) in castList"
+                  :key="idx"
+                  class="flex items-center gap-3 p-2 rounded-xl bg-[#050814]/90 border border-white/[0.07]"
+                >
+                  <img :src="actor.avatar" :alt="actor.name" class="w-10 h-10 rounded-full object-cover border border-white/[0.1]" />
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-white truncate">{{ actor.name }}</p>
+                    <p class="text-[11px] text-slate-400 truncate">{{ actor.role }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. THÔNG TIN CHI TIẾT & EKIP SẢN XUẤT -->
+            <div class="p-5 rounded-3xl bg-gradient-to-br from-[#0c1633]/90 via-[#090f26]/90 to-[#050917]/95 border border-white/[0.08] space-y-3 backdrop-blur-xl shadow-xl">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-white/[0.08] pb-3">
+                <Info class="w-4 h-4 text-cyan-400" />
+                <span>Thông Tin Chi Tiết Phim</span>
+              </h3>
+
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between py-1 border-b border-white/[0.06]">
+                  <span class="text-slate-400">Đạo diễn:</span>
+                  <span class="font-bold text-white">{{ movie?.director || 'Đang cập nhật' }}</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-white/[0.06]">
+                  <span class="text-slate-400">Thời lượng:</span>
+                  <span class="font-bold text-white">{{ movie?.durationMinutes }} phút</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-white/[0.06]">
+                  <span class="text-slate-400">Ngày phát hành:</span>
+                  <span class="font-bold text-white">{{ movie?.releaseDate }}</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-white/[0.06]">
+                  <span class="text-slate-400">Độ tuổi:</span>
+                  <span class="font-bold text-amber-400">{{ movie?.ageRatingCode }} ({{ movie?.ageRatingDesc || 'Theo quy định' }})</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-white/[0.06]">
+                  <span class="text-slate-400">Ngôn ngữ:</span>
+                  <span class="font-bold text-white">{{ movie?.language || 'Phụ đề tiếng Việt' }}</span>
+                </div>
+                <div class="flex items-center justify-between py-1">
+                  <span class="text-slate-400">Định dạng:</span>
+                  <span class="font-bold text-cyan-400">{{ movie?.formatDisplay || '2D Digital' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. QUY ĐỊNH PHÒNG VÉ & VÀO RẠP -->
+            <div class="p-4 rounded-2xl bg-[#080d1f]/75 border border-white/[0.08] text-xs text-slate-400 space-y-2 backdrop-blur-md">
+              <div class="flex items-center gap-2 text-slate-200 font-bold">
+                <ShieldCheck class="w-4 h-4 text-emerald-400" />
+                <span>Lưu ý phòng vé EventHub</span>
+              </div>
+              <p class="text-[11px] leading-relaxed">
+                Khán giả vui lòng xuất trình CCCD/Hộ chiếu đối với phim có giới hạn độ tuổi (T16, T18). Vé đã đặt trực tuyến quét mã QR để vào thẳng phòng chiếu.
+              </p>
+            </div>
+
+          </aside>
         </div>
       </section>
     </div>
@@ -579,9 +984,9 @@ const getRatingColor = (code?: string) => {
         <div class="fixed inset-0 bg-black/90 backdrop-blur-md transition-opacity" @click="bookingStep !== 'checkout' && !isSubmitting ? (bookingModalOpen = false) : null"></div>
 
         <!-- Modal Dialog -->
-        <div class="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden z-10">
+        <div class="relative w-full max-w-4xl bg-[#090f24] border border-white/[0.1] rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden z-10 backdrop-blur-2xl">
           <!-- Modal Header -->
-          <div class="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+          <div class="p-4 sm:p-5 bg-[#050814] border-b border-white/[0.08] flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-500">
                 <Ticket class="w-5 h-5" />

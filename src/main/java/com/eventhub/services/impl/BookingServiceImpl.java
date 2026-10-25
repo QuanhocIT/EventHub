@@ -47,6 +47,8 @@ public class BookingServiceImpl implements BookingService {
     private final TicketTypeRepository ticketTypeRepository;
     private final EventSeatRepository eventSeatRepository;
     private final com.eventhub.services.CouponService couponService;
+    private final com.eventhub.services.SeatHoldService seatHoldService;
+    private final org.springframework.beans.factory.ObjectProvider<org.springframework.data.redis.core.RedisTemplate<String, Object>> redisTemplateProvider;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -127,12 +129,18 @@ public class BookingServiceImpl implements BookingService {
                     throw new BadRequestException("EventSeat does not belong to this event");
                 }
 
-                if (eventSeat.getStatus() != EventSeatStatus.AVAILABLE) {
-                    throw new BadRequestException(String.format("Seat %s%s is not available (Status: %s)",
+                boolean isHeldByCurrentUser = eventSeat.getStatus() == EventSeatStatus.HELD &&
+                        (user.getUsername().equals(eventSeat.getHeldByUsername()) ||
+                         seatHoldService.isSeatHeldByCurrentUser(event.getId(), eventSeat.getId(), user.getUsername()));
+
+                if (eventSeat.getStatus() != EventSeatStatus.AVAILABLE && !isHeldByCurrentUser) {
+                    throw new BadRequestException(String.format("Ghế %s%s không còn khả dụng (Trạng thái: %s)",
                             eventSeat.getSeat().getSeatRow(), eventSeat.getSeat().getSeatNumber(), eventSeat.getStatus()));
                 }
 
                 eventSeat.setStatus(EventSeatStatus.HELD);
+                eventSeat.setHeldByUsername(user.getUsername());
+                eventSeat.setHeldExpiresAt(booking.getExpiresAt());
                 if (eventSeat.getPrice() != null) {
                     unitPrice = eventSeat.getPrice();
                 } else if (unitPrice.compareTo(BigDecimal.ZERO) == 0 && event.getPrice() != null) {
@@ -228,6 +236,13 @@ public class BookingServiceImpl implements BookingService {
             if (item.getEventSeat() != null) {
                 EventSeat eventSeat = item.getEventSeat();
                 eventSeat.setStatus(EventSeatStatus.AVAILABLE);
+                eventSeat.setHeldByUsername(null);
+                eventSeat.setHeldExpiresAt(null);
+
+                org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate = redisTemplateProvider.getIfAvailable();
+                if (redisTemplate != null) {
+                    redisTemplate.delete(String.format("seat_hold:%d:%d", booking.getEvent().getId(), eventSeat.getId()));
+                }
             }
         }
 

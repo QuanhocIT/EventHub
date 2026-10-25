@@ -12,4 +12,6 @@ public interface SeatHoldService {
     void releaseSeats(Long eventId, List<Long> eventSeatIds, String currentUsername);
 
     boolean isSeatHeldByAnother(Long eventId, Long eventSeatId, String currentUsername);
+
+    boolean isSeatHeldByCurrentUser(Long eventId, Long eventSeatId, String currentUsername);
 }

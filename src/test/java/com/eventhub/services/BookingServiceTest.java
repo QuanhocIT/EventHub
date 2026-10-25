@@ -67,6 +67,12 @@ class BookingServiceTest {
     @Mock
     private com.eventhub.services.CouponService couponService;
 
+    @Mock
+    private SeatHoldService seatHoldService;
+
+    @Mock
+    private org.springframework.beans.factory.ObjectProvider<org.springframework.data.redis.core.RedisTemplate<String, Object>> redisTemplateProvider;
+
     @InjectMocks
     private BookingServiceImpl bookingService;
 

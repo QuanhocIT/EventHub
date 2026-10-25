@@ -1,5 +1,5 @@
 import apiClient from './api'
-import type { ApiResponse, Booking, Ticket, CreateBookingRequest, Coupon } from '@/types'
+import type { ApiResponse, Booking, Ticket, CreateBookingRequest, Coupon, PaymentResponse, PaymentProvider } from '@/types'
 import { MOCK_TICKETS } from './mockData'
 
 const MOCK_COUPONS: Record<string, Coupon> = {
@@ -26,7 +26,7 @@ export const bookingService = {
       const res = await apiClient.post<ApiResponse<Booking>>('/bookings', payload)
       return res.data.data
     } catch {
-      // Mock creation
+      // Mock creation fallback
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
       const totalAmount = 1450000
       return {
@@ -59,14 +59,86 @@ export const bookingService = {
     }
   },
 
+  /**
+   * Initiate payment with chosen provider (VIETQR, MOMO, VNPAY, CREDIT_CARD) and Idempotency Key
+   */
+  async initiatePayment(
+    bookingCode: string,
+    provider: PaymentProvider = 'VIETQR',
+    idempotencyKey?: string
+  ): Promise<PaymentResponse> {
+    const key = idempotencyKey || `IDEMP-${bookingCode}-${Date.now()}`
+    try {
+      const res = await apiClient.post<ApiResponse<PaymentResponse>>(
+        '/payments',
+        {
+          bookingCode,
+          provider,
+          idempotencyKey: key,
+        },
+        {
+          headers: {
+            'Idempotency-Key': key,
+          },
+        }
+      )
+      return res.data.data
+    } catch {
+      // Fallback response with VietQR link
+      const fallbackAmount = 500000
+      return {
+        id: Date.now(),
+        transactionCode: `TXN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        bookingCode,
+        eventId: 1,
+        eventTitle: 'Sự kiện EventHub',
+        amount: fallbackAmount,
+        provider,
+        status: 'PENDING',
+        qrCodeUrl: `https://img.vietqr.io/image/970415-102874635291-compact2.png?amount=${fallbackAmount}&addInfo=${bookingCode}&accountName=CONG%20TY%20CP%20EVENTHUB%20VIET%20NAM`,
+        bankName: 'Ngân Hàng TMCP Công Thương Việt Nam (VietinBank)',
+        accountNumber: '102874635291',
+        accountName: 'CONG TY CP EVENTHUB VIET NAM',
+        transferContent: bookingCode,
+        remainingSeconds: 900,
+      }
+    }
+  },
+
+  /**
+   * Poll status of a transaction
+   */
+  async pollPaymentStatus(transactionCode: string): Promise<PaymentResponse> {
+    const res = await apiClient.get<ApiResponse<PaymentResponse>>(`/payments/status/${transactionCode}`)
+    return res.data.data
+  },
+
+  /**
+   * Simulate IPN webhook confirmation (Instant Payment Notification)
+   */
+  async simulatePaymentSuccess(transactionCode: string): Promise<PaymentResponse> {
+    try {
+      const res = await apiClient.post<ApiResponse<PaymentResponse>>(`/payments/simulate-ipn/${transactionCode}`)
+      return res.data.data
+    } catch {
+      return {
+        id: Date.now(),
+        transactionCode,
+        bookingCode: 'EVH-MOCK',
+        eventId: 1,
+        eventTitle: 'Sự kiện EventHub',
+        amount: 500000,
+        provider: 'VIETQR',
+        status: 'SUCCESS',
+      }
+    }
+  },
+
   async payBooking(bookingCode: string): Promise<{ success: boolean; transactionCode: string }> {
     try {
-      const res = await apiClient.post<ApiResponse<any>>(`/payments`, {
-        bookingCode,
-        provider: 'MOCK_SANDBOX',
-        idempotencyKey: `IDEMP-${Date.now()}`,
-      })
-      return { success: true, transactionCode: res.data.data?.transactionCode || 'MOCK_TXN_' + Date.now() }
+      const payment = await this.initiatePayment(bookingCode, 'VIETQR')
+      const confirmed = await this.simulatePaymentSuccess(payment.transactionCode)
+      return { success: confirmed.status === 'SUCCESS', transactionCode: payment.transactionCode }
     } catch {
       return { success: true, transactionCode: 'TXN_SANDBOX_' + Math.floor(100000 + Math.random() * 900000) }
     }

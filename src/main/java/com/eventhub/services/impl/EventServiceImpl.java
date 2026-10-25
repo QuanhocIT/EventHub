@@ -26,6 +26,9 @@ import com.eventhub.services.EventService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.eventhub.dto.request.BatchUpdateEventSeatsRequest;
+import com.eventhub.dto.request.ConfigureEventSeatsRequest;
+import com.eventhub.dto.request.EventSeatConfigItemRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +36,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -152,6 +157,26 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
+    public EventResponse updateEventStatus(Long id, EventStatus status, String currentUsername, boolean isAdmin) {
+        log.info("Updating event status with ID: {} to {} by user: {} (isAdmin: {})", id, status, currentUsername, isAdmin);
+
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this event");
+        }
+
+        event.setStatus(status);
+        Event updatedEvent = eventRepository.save(event);
+
+        log.info("Event status updated successfully with ID: {} to {}", updatedEvent.getId(), status);
+        return eventMapper.toResponse(updatedEvent);
+    }
+
+    @Override
+    @Transactional
     public void deleteEvent(Long id, String currentUsername, boolean isAdmin) {
         log.info("Deleting event with ID: {} by user: {} (isAdmin: {})", id, currentUsername, isAdmin);
 
@@ -174,17 +199,46 @@ public class EventServiceImpl implements EventService {
             throw new ResourceNotFoundException("Event", "id", eventId);
         }
 
+        String currentUsername = null;
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            currentUsername = auth.getName();
+        }
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
         List<EventSeat> eventSeats = eventSeatRepository.findByEventIdOrderBySeatSeatRowAscSeatSeatNumberAsc(eventId);
+
+        final String finalCurrentUsername = currentUsername;
         return eventSeats.stream()
-                .map(es -> EventSeatResponse.builder()
-                        .id(es.getId())
-                        .seatId(es.getSeat().getId())
-                        .seatRow(es.getSeat().getSeatRow())
-                        .seatNumber(es.getSeat().getSeatNumber())
-                        .zone(es.getSeat().getZone())
-                        .status(es.getStatus())
-                        .price(es.getPrice())
-                        .build())
+                .map(es -> {
+                    EventSeatStatus status = es.getStatus();
+                    boolean isHeldByCurrentUser = false;
+                    Long remainingSeconds = null;
+
+                    if (status == EventSeatStatus.HELD) {
+                        if (es.getHeldExpiresAt() != null && es.getHeldExpiresAt().isBefore(now)) {
+                            status = EventSeatStatus.AVAILABLE;
+                        } else {
+                            isHeldByCurrentUser = finalCurrentUsername != null && finalCurrentUsername.equals(es.getHeldByUsername());
+                            if (es.getHeldExpiresAt() != null) {
+                                remainingSeconds = Math.max(0, java.time.Duration.between(now, es.getHeldExpiresAt()).getSeconds());
+                            }
+                        }
+                    }
+
+                    return EventSeatResponse.builder()
+                            .id(es.getId())
+                            .seatId(es.getSeat().getId())
+                            .seatRow(es.getSeat().getSeatRow())
+                            .seatNumber(es.getSeat().getSeatNumber())
+                            .zone(es.getSeat().getZone())
+                            .status(status)
+                            .price(es.getPrice())
+                            .heldByCurrentUser(isHeldByCurrentUser)
+                            .heldExpiresAt(status == EventSeatStatus.HELD ? es.getHeldExpiresAt() : null)
+                            .remainingHoldSeconds(remainingSeconds)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -246,6 +300,138 @@ public class EventServiceImpl implements EventService {
         eventRepository.save(event);
 
         log.info("Assigned venue successfully, generated {} seats for event ID: {}", savedEventSeats.size(), eventId);
+        return getEventSeats(eventId);
+    }
+
+    @Override
+    @Transactional
+    public List<EventSeatResponse> configureEventSeats(
+            Long eventId,
+            ConfigureEventSeatsRequest request,
+            String currentUsername,
+            boolean isAdmin
+    ) {
+        log.info("Configuring visual seat map for event ID: {} by user: {}", eventId, currentUsername);
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this event");
+        }
+
+        Venue venue = null;
+        if (request.getVenueId() != null) {
+            venue = venueRepository.findById(request.getVenueId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Venue", "id", request.getVenueId()));
+            event.setVenue(venue);
+        } else if (event.getVenue() != null) {
+            venue = event.getVenue();
+        }
+
+        // If event doesn't have a venue, create or reuse a dedicated event venue
+        if (venue == null) {
+            venue = venueRepository.save(Venue.builder()
+                    .name("Hall - " + event.getTitle())
+                    .address(event.getLocation() != null ? event.getLocation() : "Default Arena")
+                    .city("Vietnam")
+                    .capacity(request.getSeats().size())
+                    .build());
+            event.setVenue(venue);
+        }
+
+        // Clear existing event seats
+        List<EventSeat> existingEventSeats = eventSeatRepository.findByEventIdOrderBySeatSeatRowAscSeatSeatNumberAsc(eventId);
+        if (!existingEventSeats.isEmpty()) {
+            eventSeatRepository.deleteAll(existingEventSeats);
+            eventSeatRepository.flush();
+        }
+
+        // Fetch or create backing physical seats
+        List<Seat> physicalSeats = seatRepository.findByVenueIdOrderBySeatRowAscSeatNumberAsc(venue.getId());
+        Map<String, Seat> seatMap = physicalSeats.stream()
+                .collect(Collectors.toMap(s -> s.getSeatRow() + "-" + s.getSeatNumber(), s -> s, (s1, s2) -> s1));
+
+        List<EventSeat> newEventSeats = new ArrayList<>();
+        BigDecimal defaultPrice = request.getDefaultPrice() != null ? request.getDefaultPrice() : (event.getPrice() != null ? event.getPrice() : BigDecimal.valueOf(50));
+
+        for (EventSeatConfigItemRequest item : request.getSeats()) {
+            String row = item.getSeatRow().trim().toUpperCase();
+            String key = row + "-" + item.getSeatNumber();
+            Seat physicalSeat = seatMap.get(key);
+
+            if (physicalSeat == null) {
+                physicalSeat = Seat.builder()
+                        .venue(venue)
+                        .seatRow(row)
+                        .seatNumber(item.getSeatNumber())
+                        .zone(item.getZone() != null ? item.getZone() : SeatZone.STANDARD)
+                        .build();
+                physicalSeat = seatRepository.save(physicalSeat);
+                seatMap.put(key, physicalSeat);
+            } else if (item.getZone() != null && physicalSeat.getZone() != item.getZone()) {
+                physicalSeat.setZone(item.getZone());
+                seatRepository.save(physicalSeat);
+            }
+
+            BigDecimal seatPrice = item.getPrice() != null ? item.getPrice() : defaultPrice;
+            EventSeatStatus status = item.getStatus() != null ? item.getStatus() : EventSeatStatus.AVAILABLE;
+
+            newEventSeats.add(EventSeat.builder()
+                    .event(event)
+                    .seat(physicalSeat)
+                    .status(status)
+                    .price(seatPrice)
+                    .build());
+        }
+
+        List<EventSeat> saved = eventSeatRepository.saveAll(newEventSeats);
+        event.setCapacity(saved.size());
+        eventRepository.save(event);
+
+        venue.setCapacity(seatRepository.findByVenueIdOrderBySeatRowAscSeatNumberAsc(venue.getId()).size());
+        venueRepository.save(venue);
+
+        log.info("Configured visual seat map with {} seats for event ID: {}", saved.size(), eventId);
+        return getEventSeats(eventId);
+    }
+
+    @Override
+    @Transactional
+    public List<EventSeatResponse> batchUpdateEventSeats(
+            Long eventId,
+            BatchUpdateEventSeatsRequest request,
+            String currentUsername,
+            boolean isAdmin
+    ) {
+        log.info("Batch updating {} event seats for event ID: {} by user: {}", request.getEventSeatIds().size(), eventId, currentUsername);
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isAdmin && !isOwner) {
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this event");
+        }
+
+        for (Long seatId : request.getEventSeatIds()) {
+            EventSeat eventSeat = eventSeatRepository.findById(seatId).orElse(null);
+            if (eventSeat != null && eventSeat.getEvent().getId().equals(eventId)) {
+                if (request.getPrice() != null) {
+                    eventSeat.setPrice(request.getPrice());
+                }
+                if (request.getStatus() != null) {
+                    eventSeat.setStatus(request.getStatus());
+                }
+                if (request.getZone() != null && eventSeat.getSeat() != null) {
+                    eventSeat.getSeat().setZone(request.getZone());
+                    seatRepository.save(eventSeat.getSeat());
+                }
+                eventSeatRepository.save(eventSeat);
+            }
+        }
+
         return getEventSeats(eventId);
     }
 }

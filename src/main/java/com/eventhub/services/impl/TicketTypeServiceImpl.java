@@ -89,6 +89,76 @@ public class TicketTypeServiceImpl implements TicketTypeService {
         return mapToResponse(ticketType);
     }
 
+    @Override
+    @Transactional
+    public TicketTypeResponse updateTicketType(Long eventId, Long ticketTypeId, com.eventhub.dto.request.UpdateTicketTypeRequest request, String currentUsername, boolean isAdmin) {
+        log.info("Updating ticket type ID: {} for event ID: {} by user: {}", ticketTypeId, eventId, currentUsername);
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException("You do not have permission to modify ticket types for this event");
+        }
+
+        TicketType ticketType = ticketTypeRepository.findByIdAndEventId(ticketTypeId, eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("TicketType", "id", ticketTypeId));
+
+        if (request.getSaleStartTime() != null && request.getSaleEndTime() != null) {
+            if (request.getSaleStartTime().isAfter(request.getSaleEndTime())) {
+                throw new BadRequestException("Sale start time must be before sale end time");
+            }
+        }
+
+        int soldCount = ticketType.getTotalQuantity() - ticketType.getAvailableQuantity();
+        if (request.getTotalQuantity() < soldCount) {
+            throw new BadRequestException("Total quantity cannot be less than already sold tickets (" + soldCount + ")");
+        }
+
+        ticketType.setName(request.getName());
+        ticketType.setDescription(request.getDescription());
+        ticketType.setPrice(request.getPrice());
+        ticketType.setTotalQuantity(request.getTotalQuantity());
+        ticketType.setAvailableQuantity(request.getTotalQuantity() - soldCount);
+        ticketType.setSaleStartTime(request.getSaleStartTime());
+        ticketType.setSaleEndTime(request.getSaleEndTime());
+        if (request.getMinPerOrder() != null) ticketType.setMinPerOrder(request.getMinPerOrder());
+        if (request.getMaxPerOrder() != null) ticketType.setMaxPerOrder(request.getMaxPerOrder());
+        if (request.getIsActive() != null) ticketType.setIsActive(request.getIsActive());
+
+        TicketType saved = ticketTypeRepository.save(ticketType);
+        log.info("Updated ticket type ID: {}", saved.getId());
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public void deleteTicketType(Long eventId, Long ticketTypeId, String currentUsername, boolean isAdmin) {
+        log.info("Deleting ticket type ID: {} for event ID: {} by user: {}", ticketTypeId, eventId, currentUsername);
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", eventId));
+
+        boolean isOwner = event.getOrganizer() != null && event.getOrganizer().getUsername().equals(currentUsername);
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException("You do not have permission to delete ticket types for this event");
+        }
+
+        TicketType ticketType = ticketTypeRepository.findByIdAndEventId(ticketTypeId, eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("TicketType", "id", ticketTypeId));
+
+        int soldCount = ticketType.getTotalQuantity() - ticketType.getAvailableQuantity();
+        if (soldCount > 0) {
+            ticketType.setIsActive(false);
+            ticketTypeRepository.save(ticketType);
+            log.info("Ticket type ID: {} has {} sold tickets, soft-deleted by setting isActive=false", ticketTypeId, soldCount);
+        } else {
+            ticketTypeRepository.delete(ticketType);
+            log.info("Deleted ticket type ID: {}", ticketTypeId);
+        }
+    }
+
     private TicketTypeResponse mapToResponse(TicketType entity) {
         return TicketTypeResponse.builder()
                 .id(entity.getId())

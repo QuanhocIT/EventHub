@@ -103,7 +103,7 @@ const formatDate = (dateStr: string) => {
                   SỰ KIỆN NỔI BẬT NHẤT
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/20">
-                  {{ evt.category.name }}
+                  {{ evt.category?.name || 'Sự kiện nổi bật' }}
                 </span>
                 <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                   <Users class="w-3.5 h-3.5" />

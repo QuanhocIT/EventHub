@@ -19,11 +19,17 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByEventIdOrderByCreatedAtAsc(Long eventId);
 
+    List<Ticket> findTop20ByEventIdAndStatusOrderByCheckedInAtDesc(Long eventId, TicketStatus status);
+
     Page<Ticket> findByBookingUserId(Long userId, Pageable pageable);
 
     boolean existsByBookingUserIdAndEventIdAndStatus(Long userId, Long eventId, TicketStatus status);
 
     long countByEventIdAndStatus(Long eventId, TicketStatus status);
+
+    long countByEventIdAndTicketTypeIdAndStatus(Long eventId, Long ticketTypeId, TicketStatus status);
+
+    long countByEventIdAndTicketTypeId(Long eventId, Long ticketTypeId);
 
     long countByEventId(Long eventId);
 

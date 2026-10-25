@@ -27,6 +27,12 @@ public class PaymentResponse {
     private PaymentProvider provider;
     private PaymentStatus status;
     private String paymentUrl;
+    private String qrCodeUrl;
+    private String bankName;
+    private String accountNumber;
+    private String accountName;
+    private String transferContent;
+    private Long remainingSeconds;
     private LocalDateTime paymentTime;
     private String errorMessage;
     private LocalDateTime createdAt;

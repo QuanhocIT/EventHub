@@ -10,6 +10,7 @@ import com.eventhub.enums.BookingStatus;
 import com.eventhub.enums.EventSeatStatus;
 import com.eventhub.enums.SeatZone;
 import com.eventhub.repositories.BookingRepository;
+import com.eventhub.repositories.EventSeatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.LocalDateTime;
@@ -38,10 +40,16 @@ class BookingCleanupJobTest {
     private BookingRepository bookingRepository;
 
     @Mock
+    private EventSeatRepository eventSeatRepository;
+
+    @Mock
     private ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
 
     @Mock
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @InjectMocks
     private BookingCleanupJob bookingCleanupJob;
@@ -64,6 +72,7 @@ class BookingCleanupJobTest {
         Seat seat = Seat.builder().seatRow("A").seatNumber(1).zone(SeatZone.VIP).build();
         eventSeat = EventSeat.builder()
                 .id(20L)
+                .event(event)
                 .seat(seat)
                 .status(EventSeatStatus.HELD)
                 .build();
@@ -116,5 +125,23 @@ class BookingCleanupJobTest {
         bookingCleanupJob.cleanupExpiredBookings();
 
         verify(redisTemplateProvider, never()).getIfAvailable();
+    }
+
+    @Test
+    @DisplayName("Should cleanup expired seat holds and reset to AVAILABLE")
+    void cleanupExpiredSeatHolds_Success() {
+        eventSeat.setHeldByUsername("test_user");
+        eventSeat.setHeldExpiresAt(LocalDateTime.now().minusMinutes(2));
+
+        when(eventSeatRepository.findByStatusAndHeldExpiresAtBefore(eq(EventSeatStatus.HELD), any(LocalDateTime.class)))
+                .thenReturn(List.of(eventSeat));
+        when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
+
+        bookingCleanupJob.cleanupExpiredSeatHolds();
+
+        assertThat(eventSeat.getStatus()).isEqualTo(EventSeatStatus.AVAILABLE);
+        assertThat(eventSeat.getHeldByUsername()).isNull();
+        assertThat(eventSeat.getHeldExpiresAt()).isNull();
+        verify(redisTemplate).delete("seat_hold:1:20");
     }
 }

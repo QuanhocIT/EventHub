@@ -11,4 +11,8 @@ public interface PaymentService {
     PaymentResponse processPayment(ProcessPaymentRequest request, String currentUsername, boolean isAdmin);
 
     PaymentResponse getPaymentByBookingCode(String bookingCode, String currentUsername, boolean isAdminOrOrganizer);
+
+    PaymentResponse getPaymentStatusByTransactionCode(String transactionCode, String currentUsername, boolean isAdmin);
+
+    PaymentResponse simulateInstantPaymentNotification(String transactionCode);
 }

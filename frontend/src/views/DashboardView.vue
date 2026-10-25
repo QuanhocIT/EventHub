@@ -15,11 +15,14 @@ import type {
   UserRole,
   OrganizerProfile,
   Category,
+  EventSeat,
+  Venue,
 } from '@/types'
 import {
   LayoutDashboard,
   Calendar,
   Users,
+  Armchair,
   ShieldAlert,
   FileSpreadsheet,
   TrendingUp,
@@ -71,6 +74,7 @@ import {
   AlertTriangle,
   Send,
   TicketPercent,
+  Trash2,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -971,10 +975,204 @@ const filteredAuditLogs = computed(() => {
   })
 })
 
-// Quick event status updater
-const changeEventStatus = (evt: Event, newStatus: string) => {
+// Quick event status updater (persisted to backend REST API)
+const changeEventStatus = async (evt: Event, newStatus: string) => {
+  const oldStatus = evt.status
   evt.status = newStatus as any
-  notify(`Đã cập nhật trạng thái sự kiện "${evt.title}" thành ${newStatus}!`, 'success')
+  try {
+    await eventService.updateEventStatus(evt.id, newStatus)
+    notify(`Đã cập nhật trạng thái sự kiện "${evt.title}" thành ${newStatus}!`, 'success')
+    // Refresh audit logs
+    adminService.getAuditLogs().then((res) => {
+      auditLogs.value = res.content
+    }).catch(() => {})
+  } catch (err: any) {
+    evt.status = oldStatus
+    notify(err?.response?.data?.message || 'Không thể cập nhật trạng thái sự kiện', 'error')
+  }
+}
+
+// ==================== EVENT & TICKET TYPES STUDIO ====================
+const editEventModalOpen = ref(false)
+const activeEditTab = ref<'info' | 'tiers' | 'seats'>('info')
+const editingEvent = ref<Event | null>(null)
+const editingEventForm = ref({
+  id: 0,
+  title: '',
+  description: '',
+  location: '',
+  startTime: '',
+  endTime: '',
+  capacity: 500,
+  price: 350000,
+  status: 'PUBLISHED' as any,
+  categoryId: 1,
+  bannerUrl: '',
+})
+
+const eventTiers = ref<any[]>([])
+const loadingTiers = ref(false)
+const eventSeatsList = ref<EventSeat[]>([])
+const loadingSeats = ref(false)
+const availableVenues = ref<Venue[]>([])
+const selectedVenueId = ref<number | ''>('')
+
+const newTierForm = ref({
+  name: '',
+  price: 350000,
+  totalQuantity: 100,
+  minPerOrder: 1,
+  maxPerOrder: 10,
+  description: '',
+})
+
+const openEditEventModal = async (evt: Event) => {
+  editingEvent.value = evt
+  selectedVenueId.value = (evt as any).venue?.id || ''
+  editingEventForm.value = {
+    id: evt.id,
+    title: evt.title,
+    description: evt.description || '',
+    location: evt.address || evt.locationName || '',
+    startTime: evt.startDateTime ? evt.startDateTime.slice(0, 16) : '2026-11-15T19:00',
+    endTime: evt.endDateTime ? evt.endDateTime.slice(0, 16) : '2026-11-15T22:30',
+    capacity: (evt as any).capacity || 500,
+    price: evt.minPrice || 350000,
+    status: evt.status || 'PUBLISHED',
+    categoryId: evt.category?.id || 1,
+    bannerUrl: evt.bannerUrl || '',
+  }
+  activeEditTab.value = 'info'
+  editEventModalOpen.value = true
+
+  // Load ticket types
+  loadingTiers.value = true
+  try {
+    eventTiers.value = await eventService.getEventTicketTypes(evt.id)
+  } catch {
+    eventTiers.value = evt.ticketTypes || []
+  } finally {
+    loadingTiers.value = false
+  }
+
+  // Load seats
+  loadingSeats.value = true
+  try {
+    eventSeatsList.value = await eventService.getSeatMap(evt.id)
+  } catch {
+    eventSeatsList.value = []
+  } finally {
+    loadingSeats.value = false
+  }
+
+  // Load venues if empty
+  if (availableVenues.value.length === 0) {
+    try {
+      availableVenues.value = await eventService.getVenues()
+    } catch {
+      availableVenues.value = []
+    }
+  }
+}
+
+const saveEventInfo = async () => {
+  if (!editingEvent.value) return
+  actionLoading.value = true
+  try {
+    const updated = await eventService.updateEvent(editingEvent.value.id, {
+      title: editingEventForm.value.title,
+      description: editingEventForm.value.description,
+      location: editingEventForm.value.location,
+      startTime: editingEventForm.value.startTime ? `${editingEventForm.value.startTime}:00` : '2026-11-15T19:00:00',
+      endTime: editingEventForm.value.endTime ? `${editingEventForm.value.endTime}:00` : '2026-11-15T22:30:00',
+      capacity: Number(editingEventForm.value.capacity),
+      price: Number(editingEventForm.value.price),
+      status: editingEventForm.value.status,
+      categoryId: Number(editingEventForm.value.categoryId),
+    })
+    
+    // Update local list
+    const idx = events.value.findIndex((e) => e.id === editingEvent.value?.id)
+    if (idx !== -1) {
+      events.value[idx] = {
+        ...events.value[idx],
+        title: updated.title,
+        description: updated.description,
+        status: updated.status,
+        minPrice: updated.minPrice,
+        startDateTime: updated.startDateTime,
+        endDateTime: updated.endDateTime,
+        locationName: updated.locationName,
+        bannerUrl: editingEventForm.value.bannerUrl || events.value[idx].bannerUrl,
+      }
+    }
+    notify('Đã cập nhật thông tin sự kiện thành công!', 'success')
+  } catch (err: any) {
+    notify(err?.response?.data?.message || 'Lỗi khi lưu thông tin sự kiện', 'error')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const createTierForEvent = async () => {
+  if (!editingEvent.value) return
+  if (!newTierForm.value.name.trim()) {
+    notify('Vui lòng nhập tên hạng vé!', 'error')
+    return
+  }
+  actionLoading.value = true
+  try {
+    const created = await eventService.createTicketType(editingEvent.value.id, {
+      name: newTierForm.value.name.trim(),
+      price: Number(newTierForm.value.price),
+      totalQuantity: Number(newTierForm.value.totalQuantity),
+      minPerOrder: Number(newTierForm.value.minPerOrder) || 1,
+      maxPerOrder: Number(newTierForm.value.maxPerOrder) || 10,
+      description: newTierForm.value.description || undefined,
+    })
+    eventTiers.value.push(created)
+    newTierForm.value = {
+      name: '',
+      price: 350000,
+      totalQuantity: 100,
+      minPerOrder: 1,
+      maxPerOrder: 10,
+      description: '',
+    }
+    notify(`Đã thêm hạng vé "${created.name}" thành công!`, 'success')
+  } catch (err: any) {
+    notify(err?.response?.data?.message || 'Không thể tạo hạng vé mới', 'error')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const deleteTierForEvent = async (tierId: number, tierName: string) => {
+  if (!editingEvent.value) return
+  actionLoading.value = true
+  try {
+    await eventService.deleteTicketType(editingEvent.value.id, tierId)
+    eventTiers.value = eventTiers.value.filter((t) => t.id !== tierId)
+    notify(`Đã xóa hạng vé "${tierName}" thành công!`, 'success')
+  } catch (err: any) {
+    notify(err?.response?.data?.message || 'Không thể xóa hạng vé này', 'error')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+const assignVenueToEvent = async (venueId: number) => {
+  if (!editingEvent.value) return
+  actionLoading.value = true
+  try {
+    const seats = await eventService.assignVenue(editingEvent.value.id, venueId, editingEventForm.value.price)
+    eventSeatsList.value = seats
+    notify('Đã gán địa điểm và sinh sơ đồ ghế tự động thành công!', 'success')
+  } catch (err: any) {
+    notify(err?.response?.data?.message || 'Không thể gán địa điểm cho sự kiện', 'error')
+  } finally {
+    actionLoading.value = false
+  }
 }
 
 // Toggle Organizer Verified Badge
@@ -1593,6 +1791,20 @@ onMounted(() => {
                   {{ organizerDashboard?.totalEvents || 6 }}
                 </span>
               </button>
+
+              <!-- Org Item 2b: Seat Map Builder Studio -->
+              <router-link
+                to="/organizer/seat-map-builder"
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer group text-slate-600 hover:bg-amber-50 hover:text-amber-900 border border-transparent hover:border-amber-200"
+              >
+                <div class="flex items-center gap-2.5">
+                  <Armchair class="w-4 h-4 text-amber-600" />
+                  <span>Studio Sơ Đồ Ghế</span>
+                </div>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">
+                  PRO
+                </span>
+              </router-link>
 
               <!-- Org Item 3: Attendees -->
               <button
@@ -2357,6 +2569,7 @@ onMounted(() => {
                     <th class="py-3 px-4">Trạng thái duyệt</th>
                     <th class="py-3 px-4">Đơn giá vé</th>
                     <th class="py-3 px-4 text-center">Báo Cáo & Thống Kê</th>
+                    <th class="py-3 px-4 text-center">Thiết Lập & Hạng Vé</th>
                     <th class="py-3 px-4 text-right">Xuất Excel</th>
                   </tr>
                 </thead>
@@ -2412,6 +2625,18 @@ onMounted(() => {
                       >
                         <Eye class="w-3.5 h-3.5" />
                         <span>Xem số liệu vé</span>
+                      </button>
+                    </td>
+
+                    <td class="py-3.5 px-4 text-center">
+                      <button
+                        type="button"
+                        @click="openEditEventModal(evt)"
+                        class="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold transition flex items-center gap-1.5 mx-auto cursor-pointer border border-purple-200 hover:border-purple-300"
+                        title="Chỉnh sửa thông tin, hạng vé & sơ đồ ghế"
+                      >
+                        <SlidersHorizontal class="w-3.5 h-3.5" />
+                        <span>Quản Lý Chi Tiết</span>
                       </button>
                     </td>
 
@@ -3073,14 +3298,23 @@ onMounted(() => {
               <h3 class="text-lg font-black text-slate-900">Danh Sách Sự Kiện Ban Tổ Chức Đang Quản Lý</h3>
               <p class="text-xs text-slate-500">Quản lý các hạng vé, mở bán vé và xuất danh sách khách tham dự</p>
             </div>
-            <button
-              type="button"
-              @click="createEventModalOpen = true"
-              class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-            >
-              <Plus class="w-4 h-4" />
-              <span>Thêm Sự Kiện Mới</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <router-link
+                to="/organizer/seat-map-builder"
+                class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              >
+                <Armchair class="w-4 h-4" />
+                <span>Studio Sơ Đồ Ghế</span>
+              </router-link>
+              <button
+                type="button"
+                @click="createEventModalOpen = true"
+                class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              >
+                <Plus class="w-4 h-4" />
+                <span>Thêm Sự Kiện Mới</span>
+              </button>
+            </div>
           </div>
 
           <!-- Events Grid -->
@@ -3122,6 +3356,13 @@ onMounted(() => {
                 >
                   Xem Số Liệu
                 </button>
+                <router-link
+                  :to="`/organizer/seat-map-builder?eventId=${evt.id}`"
+                  class="p-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 transition cursor-pointer"
+                  title="Thiết kế sơ đồ ghế cho sự kiện này"
+                >
+                  <Armchair class="w-4 h-4 text-amber-600" />
+                </router-link>
                 <button
                   type="button"
                   @click="exportAttendees(evt.id, evt.title)"
@@ -3798,7 +4039,7 @@ onMounted(() => {
               <p class="text-xs text-slate-500 mt-0.5">Xác thực vé tức thì, kiểm tra an ninh Anti-passback chống gian lận quét trùng</p>
             </div>
 
-            <!-- Stats Badge -->
+            <!-- Stats Badge & Dedicated Mobile Scanner Link -->
             <div class="flex items-center gap-4 text-xs">
               <div class="text-right">
                 <span class="text-slate-400 block text-[10px]">Tốc độ quét</span>
@@ -3808,6 +4049,13 @@ onMounted(() => {
                 <span class="text-slate-400 block text-[10px]">Đã vào cổng</span>
                 <strong class="text-indigo-700 font-black text-sm">{{ staffScanStats.totalCheckedIn }} / {{ staffScanStats.totalExpected }}</strong>
               </div>
+              <router-link
+                to="/staff/scanner"
+                class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+              >
+                <Maximize2 class="w-3.5 h-3.5 text-emerald-400" />
+                <span>Mở Máy Quét Toàn Màn Hình</span>
+              </router-link>
             </div>
           </div>
 
@@ -4410,6 +4658,549 @@ onMounted(() => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: EVENT & TICKET TYPES STUDIO ==================== -->
+    <div
+      v-if="editEventModalOpen && editingEvent"
+      class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+      @click.self="editEventModalOpen = false"
+    >
+      <div class="bg-white w-full max-w-5xl rounded-3xl border border-slate-200/90 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] animate-scale-up">
+        <!-- Studio Header -->
+        <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div class="flex items-center gap-3.5">
+            <img
+              :src="editingEventForm.bannerUrl || editingEvent.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=150&q=80'"
+              class="w-12 h-12 rounded-xl object-cover border border-slate-700 shadow-sm shrink-0"
+            />
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  Event Studio
+                </span>
+                <span
+                  class="text-[11px] font-extrabold px-2 py-0.5 rounded-md"
+                  :class="[
+                    editingEventForm.status === 'PUBLISHED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                    editingEventForm.status === 'DRAFT' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                    'bg-slate-700 text-slate-300'
+                  ]"
+                >
+                  {{ editingEventForm.status }}
+                </span>
+                <span class="text-xs text-slate-400">ID: #{{ editingEvent.id }}</span>
+              </div>
+              <h2 class="text-base font-extrabold text-white line-clamp-1 mt-0.5">
+                {{ editingEventForm.title || editingEvent.title }}
+              </h2>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="editEventModalOpen = false"
+            class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+            title="Đóng cửa sổ"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Studio Tab Bar -->
+        <div class="px-6 bg-slate-100 border-b border-slate-200 flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            @click="activeEditTab = 'info'"
+            class="px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition cursor-pointer"
+            :class="[
+              activeEditTab === 'info'
+                ? 'border-purple-600 text-purple-700 bg-white shadow-2xs rounded-t-xl'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            ]"
+          >
+            <SlidersHorizontal class="w-4 h-4" />
+            <span>Thông Tin Chung & Trạng Thái</span>
+          </button>
+
+          <button
+            type="button"
+            @click="activeEditTab = 'tiers'"
+            class="px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition cursor-pointer"
+            :class="[
+              activeEditTab === 'tiers'
+                ? 'border-purple-600 text-purple-700 bg-white shadow-2xs rounded-t-xl'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            ]"
+          >
+            <Ticket class="w-4 h-4" />
+            <span>Hạng Vé & Giá Bán</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800">
+              {{ eventTiers.length }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            @click="activeEditTab = 'seats'"
+            class="px-4 py-3 text-xs font-bold flex items-center gap-2 border-b-2 transition cursor-pointer"
+            :class="[
+              activeEditTab === 'seats'
+                ? 'border-purple-600 text-purple-700 bg-white shadow-2xs rounded-t-xl'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            ]"
+          >
+            <MapPin class="w-4 h-4" />
+            <span>Sơ Đồ Ghế & Địa Điểm</span>
+            <span
+              v-if="eventSeatsList.length > 0"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800"
+            >
+              {{ eventSeatsList.length }} ghế
+            </span>
+          </button>
+        </div>
+
+        <!-- Studio Tab Content Area (Scrollable) -->
+        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+          <!-- ================= TAB 1: THÔNG TIN CHUNG ================= -->
+          <div v-if="activeEditTab === 'info'" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Event Title -->
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Tên sự kiện / Show diễn *</label>
+                <input
+                  v-model="editingEventForm.title"
+                  type="text"
+                  required
+                  placeholder="Nhập tên sự kiện..."
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
+                />
+              </div>
+
+              <!-- Status Selection -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Trạng thái phát hành *</label>
+                <select
+                  v-model="editingEventForm.status"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="PUBLISHED">PUBLISHED - Đang mở bán công khai</option>
+                  <option value="DRAFT">DRAFT - Bản nháp (chưa mở bán)</option>
+                  <option value="CANCELLED">CANCELLED - Đã hủy sự kiện</option>
+                </select>
+              </div>
+
+              <!-- Category -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Danh mục sự kiện *</label>
+                <select
+                  v-model="editingEventForm.categoryId"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option :value="1">Âm Nhạc & Concert</option>
+                  <option :value="2">Hội Thảo & Tech Summit</option>
+                  <option :value="3">Thể Thao & Esports</option>
+                  <option :value="4">Nghệ Thuật & Triển Lãm</option>
+                </select>
+              </div>
+
+              <!-- Base Price -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Đơn giá vé tham khảo (VNĐ) *</label>
+                <div class="relative">
+                  <DollarSign class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    v-model.number="editingEventForm.price"
+                    type="number"
+                    min="0"
+                    step="10000"
+                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <!-- Capacity -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Sức chứa tối đa (Khán giả) *</label>
+                <input
+                  v-model.number="editingEventForm.capacity"
+                  type="number"
+                  min="1"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <!-- Start Time -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Thời gian bắt đầu *</label>
+                <input
+                  v-model="editingEventForm.startTime"
+                  type="datetime-local"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <!-- End Time -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Thời gian kết thúc *</label>
+                <input
+                  v-model="editingEventForm.endTime"
+                  type="datetime-local"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <!-- Location String -->
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Địa chỉ / Khu vực tổ chức</label>
+                <div class="relative">
+                  <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    v-model="editingEventForm.location"
+                    type="text"
+                    placeholder="VD: Trung tâm Hội nghị Quốc gia, Hà Nội"
+                    class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <!-- Banner URL & Presets -->
+              <div class="md:col-span-2 space-y-2">
+                <label class="block text-xs font-bold text-slate-700">Ảnh bìa sự kiện (Banner URL)</label>
+                <input
+                  v-model="editingEventForm.bannerUrl"
+                  type="url"
+                  placeholder="https://..."
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <div class="flex items-center gap-2 overflow-x-auto pt-1">
+                  <span class="text-[11px] font-bold text-slate-400 shrink-0">Preset nhanh:</span>
+                  <button
+                    v-for="(p, i) in presetBanners"
+                    :key="i"
+                    type="button"
+                    @click="editingEventForm.bannerUrl = p.url"
+                    class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 whitespace-nowrap transition cursor-pointer"
+                  >
+                    {{ p.name }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Mô tả sự kiện chi tiết</label>
+                <textarea
+                  v-model="editingEventForm.description"
+                  rows="3"
+                  placeholder="Nội dung chương trình, nghệ sĩ biểu diễn, quy định trang phục..."
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                @click="saveEventInfo"
+                :disabled="actionLoading"
+                class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw v-if="actionLoading" class="w-4 h-4 animate-spin" />
+                <Check v-else class="w-4 h-4" />
+                <span>{{ actionLoading ? 'Đang lưu...' : 'Lưu Thay Đổi Thông Tin' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ================= TAB 2: QUẢN LÝ HẠNG VÉ ================= -->
+          <div v-if="activeEditTab === 'tiers'" class="space-y-6">
+            <!-- Tiers List -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-slate-900">Danh Sách Hạng Vé Đang Áp Dụng</h4>
+                  <p class="text-xs text-slate-500">Mỗi sự kiện có thể có nhiều hạng vé với giá tiền và số lượng phân bổ riêng biệt.</p>
+                </div>
+                <span class="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-lg border border-purple-200">
+                  Tổng: {{ eventTiers.length }} hạng vé
+                </span>
+              </div>
+
+              <div v-if="loadingTiers" class="py-8 text-center text-xs font-semibold text-slate-400">
+                <RefreshCw class="w-5 h-5 animate-spin mx-auto mb-2 text-purple-600" />
+                Đang tải dữ liệu hạng vé...
+              </div>
+
+              <div v-else-if="eventTiers.length === 0" class="p-8 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                <Ticket class="w-8 h-8 text-slate-300 mx-auto" />
+                <p class="text-xs font-bold text-slate-600">Sự kiện chưa có hạng vé nào.</p>
+                <p class="text-[11px] text-slate-400">Hãy tạo ít nhất một hạng vé bên dưới để khán giả có thể bắt đầu đặt mua.</p>
+              </div>
+
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  v-for="tier in eventTiers"
+                  :key="tier.id"
+                  class="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/50 hover:bg-white hover:border-purple-300 hover:shadow-md transition space-y-2.5 relative group"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-sm text-slate-900">{{ tier.name }}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                          ID: #{{ tier.id }}
+                        </span>
+                      </div>
+                      <div class="text-base font-extrabold text-purple-700 mt-0.5">
+                        {{ formatCurrency(tier.price) }}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      @click="deleteTierForEvent(tier.id, tier.name)"
+                      class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                      title="Xóa hạng vé này"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/60">
+                    <div>
+                      <span class="text-slate-400 text-[11px]">Tổng phát hành:</span>
+                      <div class="font-bold text-slate-800">{{ tier.totalQuantity?.toLocaleString() || 0 }} vé</div>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 text-[11px]">Số lượng mỗi đơn:</span>
+                      <div class="font-bold text-slate-800">{{ tier.minPerOrder || 1 }} - {{ tier.maxPerOrder || 10 }} vé</div>
+                    </div>
+                  </div>
+
+                  <p v-if="tier.description" class="text-[11px] text-slate-500 italic line-clamp-1">
+                    "{{ tier.description }}"
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Create New Tier Card -->
+            <div class="p-5 rounded-2xl bg-purple-50/50 border border-purple-200 space-y-4">
+              <div class="flex items-center gap-2">
+                <div class="p-1.5 rounded-lg bg-purple-600 text-white">
+                  <Plus class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Thêm Hạng Vé Mới</h4>
+                  <p class="text-[11px] text-slate-500">Thiết lập thêm phân khúc vé (e.g. VIP, Standard, Early Bird, VVIP Lounges).</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-1">
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Tên hạng vé *</label>
+                  <input
+                    v-model="newTierForm.name"
+                    type="text"
+                    placeholder="VD: VIP Diamond, Standard..."
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Giá vé (VNĐ) *</label>
+                  <input
+                    v-model.number="newTierForm.price"
+                    type="number"
+                    min="0"
+                    step="50000"
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-bold text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Số lượng vé phát hành *</label>
+                  <input
+                    v-model.number="newTierForm.totalQuantity"
+                    type="number"
+                    min="1"
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Tối thiểu mỗi đơn</label>
+                  <input
+                    v-model.number="newTierForm.minPerOrder"
+                    type="number"
+                    min="1"
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Tối đa mỗi đơn</label>
+                  <input
+                    v-model.number="newTierForm.maxPerOrder"
+                    type="number"
+                    min="1"
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Quyền lợi / Ghi chú</label>
+                  <input
+                    v-model="newTierForm.description"
+                    type="text"
+                    placeholder="VD: Bao gồm đồ uống & quà kỷ niệm..."
+                    class="w-full px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-1">
+                <button
+                  type="button"
+                  @click="createTierForEvent"
+                  :disabled="actionLoading || !newTierForm.name.trim()"
+                  class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50"
+                >
+                  <Plus class="w-4 h-4" />
+                  <span>Xác Nhận Tạo Hạng Vé</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= TAB 3: SƠ ĐỒ GHẾ & ĐỊA ĐIỂM ================= -->
+          <div v-if="activeEditTab === 'seats'" class="space-y-6">
+            <!-- Venue Assignment Box -->
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Cấu Hình Địa Điểm & Sinh Ma Trận Ghế</h4>
+                  <p class="text-xs text-slate-500">Chọn rạp hát hoặc hội trường để hệ thống tự động khởi tạo ma trận số ghế cho sự kiện.</p>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row items-center gap-3">
+                <select
+                  v-model="selectedVenueId"
+                  class="w-full sm:w-80 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="" disabled>-- Chọn địa điểm hội trường / rạp --</option>
+                  <option v-for="venue in availableVenues" :key="venue.id" :value="venue.id">
+                    {{ venue.name }} ({{ venue.capacity }} chỗ) - {{ venue.city || venue.address }}
+                  </option>
+                </select>
+
+                <button
+                  type="button"
+                  @click="selectedVenueId && assignVenueToEvent(Number(selectedVenueId))"
+                  :disabled="!selectedVenueId || actionLoading"
+                  class="w-full sm:w-auto px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw v-if="actionLoading" class="w-4 h-4 animate-spin" />
+                  <MapPin v-else class="w-4 h-4" />
+                  <span>Gán Địa Điểm & Khởi Tạo Ghế</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Seat Map Visualizer -->
+            <div class="space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 class="text-sm font-bold text-slate-900">Sơ Đồ Phân Bổ Chỗ Ngồi Thực Tế</h4>
+                  <p class="text-xs text-slate-500">Trạng thái thời gian thực của từng vị trí ghế trong khán phòng.</p>
+                </div>
+
+                <!-- Seat Status Legend -->
+                <div class="flex items-center gap-3 text-xs font-semibold">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded bg-emerald-500"></span>
+                    <span class="text-slate-600">Trống (Available)</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded bg-amber-500"></span>
+                    <span class="text-slate-600">Đang giữ (Held)</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded bg-rose-500"></span>
+                    <span class="text-slate-600">Đã bán (Sold)</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded bg-slate-300"></span>
+                    <span class="text-slate-600">Khóa (Blocked)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="loadingSeats" class="py-12 text-center text-xs font-semibold text-slate-400">
+                <RefreshCw class="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
+                Đang nạp dữ liệu ma trận ghế...
+              </div>
+
+              <div v-else-if="eventSeatsList.length === 0" class="p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                <MapPin class="w-10 h-10 text-slate-300 mx-auto" />
+                <p class="text-sm font-bold text-slate-700">Chưa có sơ đồ ghế nào được tạo cho sự kiện này.</p>
+                <p class="text-xs text-slate-400">Hãy chọn địa điểm ở khung bên trên và nhấn "Gán Địa Điểm & Khởi Tạo Ghế".</p>
+              </div>
+
+              <!-- Seat Grid Visual Matrix -->
+              <div v-else class="p-6 rounded-3xl bg-slate-950 text-white border border-slate-800 space-y-6">
+                <!-- Stage Bar -->
+                <div class="w-3/4 mx-auto py-2 rounded-xl bg-purple-600/30 border border-purple-500/40 text-center text-xs font-extrabold uppercase tracking-widest text-purple-200 shadow-inner">
+                  SÂN KHẤU CHÍNH / MÀN HÌNH (STAGE)
+                </div>
+
+                <!-- Matrix -->
+                <div class="overflow-x-auto py-4">
+                  <div class="flex flex-wrap gap-2 justify-center max-w-4xl mx-auto">
+                    <div
+                      v-for="seat in eventSeatsList.slice(0, 120)"
+                      :key="seat.id"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-extrabold cursor-pointer transition transform hover:scale-110 shadow-xs"
+                      :class="[
+                        seat.status === 'AVAILABLE' ? 'bg-emerald-500/90 text-white hover:bg-emerald-400' :
+                        seat.status === 'HELD' ? 'bg-amber-500 text-white' :
+                        seat.status === 'SOLD' ? 'bg-rose-500 text-white opacity-80' :
+                        'bg-slate-700 text-slate-400'
+                      ]"
+                      :title="`Ghế ${seat.rowName}${seat.seatNumber} (${seat.zone}) - ${seat.status} (${formatCurrency(seat.price)})`"
+                    >
+                      {{ seat.rowName }}{{ seat.seatNumber }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800">
+                  <span>Hiển thị {{ Math.min(eventSeatsList.length, 120) }} / {{ eventSeatsList.length }} chỗ ngồi</span>
+                  <span class="text-purple-300 font-bold">Tỉ lệ lấp đầy: {{ Math.round((eventSeatsList.filter(s => s.status === 'SOLD').length / (eventSeatsList.length || 1)) * 100) }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Studio Modal Footer -->
+        <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div class="text-xs text-slate-500">
+            Mọi cập nhật sẽ có hiệu lực trực tiếp trên toàn hệ thống bán vé.
+          </div>
+          <button
+            type="button"
+            @click="editEventModalOpen = false"
+            class="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition cursor-pointer"
+          >
+            Đóng Cửa Sổ
+          </button>
+        </div>
       </div>
     </div>
 

@@ -1,6 +1,28 @@
 export type BookingStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED'
+export type PaymentProvider = 'MOCK_SANDBOX' | 'VIETQR' | 'MOMO' | 'VNPAY' | 'CREDIT_CARD'
 export type TicketStatus = 'VALID' | 'USED' | 'CANCELLED'
+
+export interface PaymentResponse {
+  id: number
+  transactionCode: string
+  bookingCode: string
+  eventId: number
+  eventTitle: string
+  amount: number
+  provider: PaymentProvider
+  status: PaymentStatus
+  paymentUrl?: string
+  qrCodeUrl?: string
+  bankName?: string
+  accountNumber?: string
+  accountName?: string
+  transferContent?: string
+  remainingSeconds?: number
+  paymentTime?: string
+  errorMessage?: string
+  createdAt?: string
+}
 
 export interface Coupon {
   code: string

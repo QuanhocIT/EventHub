@@ -76,4 +76,25 @@ public class TicketController {
         CheckInResponse response = ticketService.checkInTicket(ticketCode, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Ticket checked in successfully", response));
     }
+
+    @Operation(summary = "Pre-verify ticket at gate without marking as checked-in")
+    @GetMapping("/{ticketCode}/verify")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN', 'ORGANIZER')")
+    public ResponseEntity<ApiResponse<CheckInResponse>> verifyTicket(
+            @PathVariable String ticketCode,
+            Principal principal
+    ) {
+        CheckInResponse response = ticketService.verifyTicket(ticketCode, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "Get real-time check-in gate dashboard statistics for event")
+    @GetMapping("/events/{eventId}/gate-stats")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN', 'ORGANIZER')")
+    public ResponseEntity<ApiResponse<com.eventhub.dto.response.GateStatsResponse>> getGateStats(
+            @PathVariable Long eventId
+    ) {
+        com.eventhub.dto.response.GateStatsResponse response = ticketService.getGateStats(eventId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
