@@ -41,6 +41,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final BookingRepository bookingRepository;
     private final TicketRepository ticketRepository;
     private final ReviewMapper reviewMapper;
+    private final com.eventhub.services.LoyaltyService loyaltyService;
 
     @Override
     @Transactional
@@ -70,11 +71,20 @@ public class ReviewServiceImpl implements ReviewService {
             throw new BadRequestException("Only verified attendees with a confirmed booking or checked-in ticket can review this event");
         }
 
+        String imagesJson = null;
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            try {
+                imagesJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(request.getImageUrls());
+            } catch (Exception ignored) {}
+        }
+
         Review review = Review.builder()
                 .event(event)
                 .user(user)
                 .rating(request.getRating())
                 .comment(request.getComment().trim())
+                .imagesJson(imagesJson)
+                .likesCount(0)
                 .isVerifiedAttendee(true)
                 .build();
 
@@ -82,6 +92,16 @@ public class ReviewServiceImpl implements ReviewService {
         log.info("Review ID {} created for event ID {} by user '{}'", savedReview.getId(), eventId, username);
 
         recalculateAndSaveEventRating(event);
+
+        if (loyaltyService != null) {
+            if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+                loyaltyService.awardPoints(user, 50, com.eventhub.enums.LoyaltyActivityType.REVIEW_WITH_PHOTO,
+                        "Thưởng đánh giá sự kiện '" + event.getTitle() + "' kèm hình ảnh thực tế (+50 pts)");
+            } else {
+                loyaltyService.awardPoints(user, 20, com.eventhub.enums.LoyaltyActivityType.BOOKING_REWARD,
+                        "Thưởng đánh giá sự kiện '" + event.getTitle() + "' (+20 pts)");
+            }
+        }
 
         return reviewMapper.toResponse(savedReview);
     }
@@ -190,6 +210,41 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findByUserIdAndEventId(user.getId(), eventId)
                 .map(reviewMapper::toResponse)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public ReviewResponse toggleLikeReview(Long reviewId, String username) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
+        int current = review.getLikesCount() != null ? review.getLikesCount() : 0;
+        review.setLikesCount(current + 1);
+        Review saved = reviewRepository.save(review);
+        ReviewResponse res = reviewMapper.toResponse(saved);
+        res.setIsLiked(true);
+        return res;
+    }
+
+    @Override
+    @Transactional
+    public ReviewResponse replyToReview(Long reviewId, String organizerReply, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with ID: " + reviewId));
+
+        boolean isAdmin = user.getRole() == com.eventhub.enums.UserRole.ROLE_ADMIN;
+        boolean isOrganizer = review.getEvent().getOrganizer() != null &&
+                review.getEvent().getOrganizer().getId().equals(user.getId());
+
+        if (!isAdmin && !isOrganizer) {
+            throw new ForbiddenException("Chỉ Ban tổ chức sự kiện hoặc Quản trị viên mới có quyền phản hồi đánh giá");
+        }
+
+        review.setOrganizerReply(organizerReply.trim());
+        review.setOrganizerReplyAt(LocalDateTime.now());
+        Review saved = reviewRepository.save(review);
+        return reviewMapper.toResponse(saved);
     }
 
     private void recalculateAndSaveEventRating(Event event) {

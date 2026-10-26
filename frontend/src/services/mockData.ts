@@ -722,6 +722,27 @@ export const MOCK_TICKETS: Ticket[] = [
     refundDate: '2026-10-09T14:20:00',
     refundMethod: 'Tài khoản Vietcombank (Số thẻ ****8829)',
   },
+  {
+    id: 10,
+    ticketCode: 'CNM-202610-TK90123',
+    bookingCode: 'CINEMA-20261025-A8F19B',
+    eventId: 101,
+    eventTitle: 'Thanh Gươm Diệt Quỷ: Vô Hạn Thành (IMAX Laser)',
+    eventBannerUrl: '/images/hero_demon_slayer_bg.jpg',
+    eventStartDateTime: '2026-10-26T20:30:00',
+    venueName: 'CineVerse Megamall Landmark 81 IMAX Laser (Rạp 01)',
+    ticketTypeName: 'Ghế Đôi Sweetbox (Kèm Combo Solo)',
+    seatLabel: 'Dãy J - Ghế J01 & J02 (Sweetbox)',
+    qrCodeBase64: 'eventhub://cinema/CINEMA-20261025-A8F19B',
+    status: 'VALID',
+    attendeeName: 'Nguyễn Văn Quân',
+    price: 380000,
+    gate: 'Cổng Soát Vé Rạp 01 - Tầng B1',
+    zone: 'Sweetbox Couple Zone',
+    orderDate: '2026-10-25T18:40:00',
+    categoryName: 'Điện ảnh & Chiếu rạp',
+    googleMapsUrl: 'https://maps.google.com/?q=Vincom+Center+Landmark+81+TPHCM',
+  },
 ]
 
 

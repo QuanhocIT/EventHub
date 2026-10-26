@@ -40,6 +40,11 @@ import {
   Info,
   ShieldAlert,
   Award,
+  Printer,
+  Download,
+  CreditCard,
+  Smartphone,
+  Copy,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -207,6 +212,29 @@ const couponError = ref('')
 const isSubmitting = ref(false)
 const completedBooking = ref<Booking | null>(null)
 
+// Payment method state
+const paymentMethod = ref<'VIETQR' | 'MOMO' | 'VNPAY'>('VIETQR')
+const ticketCopied = ref(false)
+
+const concessionVoucherCode = computed(() => {
+  if (!completedBooking.value?.bookingCode) return 'FNB-9824-CINE'
+  return `FNB-${completedBooking.value.bookingCode.slice(-4)}-CINE`
+})
+
+const copyBookingCode = () => {
+  if (completedBooking.value?.bookingCode) {
+    navigator.clipboard?.writeText(completedBooking.value.bookingCode)
+    ticketCopied.value = true
+    setTimeout(() => {
+      ticketCopied.value = false
+    }, 2500)
+  }
+}
+
+const printTicket = () => {
+  window.print()
+}
+
 // Load movie detail and showtimes
 const loadMovieData = async () => {
   loading.value = true
@@ -225,6 +253,32 @@ const loadMovieData = async () => {
 
     await loadShowtimes(movieData.id, selectedDate.value)
     concessions.value = await cinemaService.getConcessions()
+
+    // Handle autoBook query parameter from CinemaDetailView or CinemasView
+    if (route.query.autoBook === 'true') {
+      const qTime = route.query.time as string | undefined
+      const qShowtimeId = route.query.showtimeId ? Number(route.query.showtimeId) : undefined
+      const qComplexId = route.query.complexId ? Number(route.query.complexId) : undefined
+
+      let target: Showtime | undefined
+      if (qShowtimeId) {
+        target = showtimes.value.find((s) => s.id === qShowtimeId)
+      }
+      if (!target && qComplexId) {
+        target = showtimes.value.find(
+          (s) => s.complexId === qComplexId && (!qTime || formatTime(s.startTime) === qTime)
+        )
+        if (!target) {
+          target = showtimes.value.find((s) => s.complexId === qComplexId)
+        }
+      }
+      if (!target && showtimes.value.length > 0) {
+        target = showtimes.value[0]
+      }
+      if (target) {
+        openBookingFlow(target)
+      }
+    }
   } catch (err) {
     console.error('Error loading movie:', err)
   } finally {
@@ -326,26 +380,44 @@ const seatRows = computed(() => {
   return sorted
 })
 
-// Handle Seat Toggle
+// Handle Seat Toggle with Sweetbox pair support
 const toggleSeat = (seat: CinemaSeat) => {
   if (seat.status !== 'AVAILABLE') return
+
+  const isSweetbox = seat.zone === 'SWEETBOX'
+  let partnerSeat: CinemaSeat | undefined = undefined
+  if (isSweetbox) {
+    const partnerNum = seat.number % 2 !== 0 ? seat.number + 1 : seat.number - 1
+    partnerSeat = seats.value.find((s) => s.row === seat.row && s.number === partnerNum)
+  }
 
   const index = selectedSeats.value.findIndex((s) => s.seatCode === seat.seatCode)
   if (index >= 0) {
     // Deselect
     selectedSeats.value.splice(index, 1)
+    if (partnerSeat) {
+      const partnerIdx = selectedSeats.value.findIndex((s) => s.seatCode === partnerSeat!.seatCode)
+      if (partnerIdx >= 0) selectedSeats.value.splice(partnerIdx, 1)
+    }
   } else {
-    // Max 8 seats
-    if (selectedSeats.value.length >= 8) {
+    // Max 8 seats limit check
+    const seatsToAdd = partnerSeat && partnerSeat.status === 'AVAILABLE' ? [seat, partnerSeat] : [seat]
+    if (selectedSeats.value.length + seatsToAdd.length > 8) {
       alert('Bạn chỉ có thể chọn tối đa 8 ghế trong một lần đặt!')
       return
     }
-    selectedSeats.value.push(seat)
+    for (const s of seatsToAdd) {
+      if (!selectedSeats.value.some((x) => x.seatCode === s.seatCode)) {
+        selectedSeats.value.push(s)
+      }
+    }
   }
 }
 
 const isSeatSelected = (seat: CinemaSeat) => {
-  return selectedSeats.value.some((s) => s.seatCode === seat.seatCode)
+  return selectedSeats.value.some(
+    (s) => s.seatCode === seat.seatCode || (seat.zone === 'SWEETBOX' && s.seatCode === seat.pairWith)
+  )
 }
 
 // Concessions update
@@ -1210,9 +1282,12 @@ const getRatingColor = (code?: string) => {
             </div>
           </div>
 
-          <!-- Step 3: CHECKOUT & COUPON -->
+          <!-- Step 3: CHECKOUT & COUPON & PAYMENT METHODS -->
           <div v-else-if="bookingStep === 'checkout'" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-            <h4 class="font-black text-lg text-white">Tóm Tắt & Xác Nhận Đặt Vé</h4>
+            <h4 class="font-black text-lg text-white flex items-center gap-2">
+              <ShieldCheck class="w-5 h-5 text-emerald-400" />
+              <span>Tóm Tắt & Xác Nhận Đặt Vé</span>
+            </h4>
 
             <!-- Order Recap Box -->
             <div class="rounded-2xl bg-slate-950 border border-slate-800 p-5 space-y-4">
@@ -1227,16 +1302,27 @@ const getRatingColor = (code?: string) => {
               <!-- Seats Recap -->
               <div class="flex items-center justify-between border-b border-slate-800 pb-3 text-xs">
                 <span class="text-slate-400">Ghế đã chọn ({{ selectedSeats.length }}):</span>
-                <span class="font-black text-rose-400">
-                  {{ selectedSeats.map((s) => s.seatCode).join(', ') }} ({{ formatCurrency(seatsSubtotal) }})
-                </span>
+                <div class="flex flex-wrap items-center justify-end gap-1.5 max-w-[65%]">
+                  <span
+                    v-for="s in selectedSeats"
+                    :key="s.seatCode"
+                    class="px-2 py-0.5 rounded text-[11px] font-bold"
+                    :class="s.zone === 'SWEETBOX' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : s.zone === 'VIP' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-200'"
+                  >
+                    {{ s.seatCode }}
+                  </span>
+                  <span class="font-black text-rose-400 ml-1">({{ formatCurrency(seatsSubtotal) }})</span>
+                </div>
               </div>
 
               <!-- Concessions Recap -->
               <div v-if="concessionsSubtotal > 0" class="border-b border-slate-800 pb-3 space-y-1.5 text-xs">
                 <div class="flex items-center justify-between font-bold text-slate-300">
-                  <span>Bắp Nước F&B:</span>
-                  <span>{{ formatCurrency(concessionsSubtotal) }}</span>
+                  <span class="flex items-center gap-1.5">
+                    <Sparkles class="w-3.5 h-3.5 text-amber-400" />
+                    <span>Bắp Nước F&B (Nhận tại quầy):</span>
+                  </span>
+                  <span class="text-amber-400 font-bold">{{ formatCurrency(concessionsSubtotal) }}</span>
                 </div>
                 <div
                   v-for="[idStr, qty] in Object.entries(selectedConcessions)"
@@ -1282,43 +1368,241 @@ const getRatingColor = (code?: string) => {
                 </span>
               </div>
             </div>
+
+            <!-- Payment Provider Selection -->
+            <div class="space-y-3">
+              <label class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <CreditCard class="w-3.5 h-3.5 text-cyan-400" />
+                <span>Phương thức thanh toán trực tuyến:</span>
+              </label>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- VietQR Option -->
+                <button
+                  type="button"
+                  @click="paymentMethod = 'VIETQR'"
+                  class="p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between gap-2"
+                  :class="paymentMethod === 'VIETQR' ? 'bg-cyan-950/40 border-cyan-500 ring-1 ring-cyan-500' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                      <QrCode class="w-4 h-4 text-cyan-400" />
+                      VietQR Pro 24/7
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300">0% phí</span>
+                  </div>
+                  <p class="text-[10px] text-slate-400 leading-tight">Quét mã Napas chuyển khoản tức thì, xuất vé trong 3 giây.</p>
+                </button>
+
+                <!-- MoMo Option -->
+                <button
+                  type="button"
+                  @click="paymentMethod = 'MOMO'"
+                  class="p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between gap-2"
+                  :class="paymentMethod === 'MOMO' ? 'bg-pink-950/40 border-pink-500 ring-1 ring-pink-500' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Smartphone class="w-4 h-4 text-pink-400" />
+                      Ví MoMo
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-500/20 text-pink-300">+5% Cine</span>
+                  </div>
+                  <p class="text-[10px] text-slate-400 leading-tight">Thanh toán 1 chạm qua ứng dụng Ví MoMo điện tử.</p>
+                </button>
+
+                <!-- VNPay Option -->
+                <button
+                  type="button"
+                  @click="paymentMethod = 'VNPAY'"
+                  class="p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between gap-2"
+                  :class="paymentMethod === 'VNPAY' ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500' : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                      <CreditCard class="w-4 h-4 text-blue-400" />
+                      Cổng VNPAY-QR
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/20 text-blue-300">40+ Bank</span>
+                  </div>
+                  <p class="text-[10px] text-slate-400 leading-tight">Hỗ trợ 40+ app ngân hàng, thẻ ATM nội địa &amp; thẻ Visa/Mastercard.</p>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <!-- Step 4: SUCCESS MODAL -->
-          <div v-else-if="bookingStep === 'success'" class="flex-1 overflow-y-auto p-6 sm:p-8 text-center space-y-6">
-            <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl">
-              <Check class="w-8 h-8" />
-            </div>
-
-            <div class="space-y-1">
-              <h3 class="text-2xl font-black text-white">Đặt Vé Phim Thành Công!</h3>
-              <p class="text-xs sm:text-sm text-slate-400">
-                Mã đặt vé của bạn là:
-                <strong class="text-rose-400 font-mono text-base ml-1">{{ completedBooking?.bookingCode }}</strong>
+          <!-- Step 4: SUCCESS CINEMATIC BOARDING PASS E-TICKET -->
+          <div v-else-if="bookingStep === 'success'" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div class="text-center space-y-1">
+              <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-xl">
+                <Check class="w-6 h-6" />
+              </div>
+              <h3 class="text-xl sm:text-2xl font-black text-white">Vé Phim Của Bạn Đã Sẵn Sàng!</h3>
+              <p class="text-xs text-slate-400">
+                Vé điện tử đã được xác nhận thanh toán qua {{ paymentMethod }}. Vui lòng xuất trình mã QR khi vào phòng chiếu.
               </p>
             </div>
 
-            <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 max-w-sm mx-auto text-xs text-slate-300 space-y-2 text-left">
-              <p><strong>Phim:</strong> {{ movie?.title }}</p>
-              <p><strong>Cụm rạp:</strong> {{ selectedShowtime?.complexName }}</p>
-              <p><strong>Phòng & Suất:</strong> {{ selectedShowtime?.screenName }} ({{ formatTime(selectedShowtime?.startTime) }})</p>
-              <p><strong>Ghế:</strong> {{ selectedSeats.map((s) => s.seatCode).join(', ') }}</p>
-              <p><strong>Tổng tiền:</strong> {{ formatCurrency(totalAmount) }}</p>
+            <!-- CINEMA ELECTRONIC BOARDING PASS -->
+            <div class="max-w-xl mx-auto rounded-3xl overflow-hidden border border-white/[0.12] bg-[#070b19] shadow-2xl relative">
+              <!-- Pass Glowing Header -->
+              <div class="p-5 bg-gradient-to-r from-rose-900/60 via-indigo-900/40 to-slate-900/90 border-b border-white/[0.08] flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-rose-400 flex items-center gap-1">
+                    <Film class="w-3 h-3" />
+                    <span>EventHub Cinema Luxe Pass</span>
+                  </span>
+                  <h4 class="text-base font-extrabold text-white">{{ selectedShowtime?.complexName }}</h4>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 uppercase font-mono">MÃ ĐẶT VÉ</span>
+                  <div class="flex items-center gap-1.5">
+                    <strong class="text-xs font-mono font-bold text-cyan-300">{{ completedBooking?.bookingCode }}</strong>
+                    <button
+                      type="button"
+                      @click="copyBookingCode"
+                      class="text-slate-400 hover:text-white transition cursor-pointer"
+                      title="Sao chép mã đặt vé"
+                    >
+                      <Copy class="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <span v-if="ticketCopied" class="text-[9px] text-emerald-400 font-semibold">Đã chép!</span>
+                </div>
+              </div>
+
+              <!-- Pass Main Body -->
+              <div class="p-5 space-y-4">
+                <!-- Movie Info Row -->
+                <div class="flex items-start gap-4">
+                  <img
+                    :src="movie?.posterUrl"
+                    :alt="movie?.title"
+                    class="w-16 h-24 sm:w-20 sm:h-28 rounded-xl object-cover shadow-lg border border-white/10 shrink-0"
+                  />
+                  <div class="space-y-1.5 flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span
+                        class="px-2 py-0.5 rounded text-[10px] font-black tracking-wide border"
+                        :class="getRatingColor(movie?.ageRatingCode)"
+                      >
+                        {{ movie?.ageRatingCode }}
+                      </span>
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                        {{ selectedShowtime?.screenType }}
+                      </span>
+                      <span class="text-[11px] text-slate-400">{{ movie?.durationMinutes }} phút</span>
+                    </div>
+
+                    <h5 class="font-extrabold text-base sm:text-lg text-white leading-snug">
+                      {{ movie?.title }}
+                    </h5>
+                    <p class="text-xs text-slate-400 line-clamp-1">{{ movie?.genre }}</p>
+                  </div>
+                </div>
+
+                <!-- Perforated Line with Notch Holes -->
+                <div class="relative py-2">
+                  <div class="border-t border-dashed border-white/20"></div>
+                  <div class="absolute -left-7 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#090f24]"></div>
+                  <div class="absolute -right-7 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#090f24]"></div>
+                </div>
+
+                <!-- Key Ticket Details Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/70 p-3.5 rounded-2xl border border-white/[0.06] text-xs">
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Suất Chiếu</span>
+                    <p class="font-black text-rose-400 text-sm mt-0.5">{{ formatTime(selectedShowtime?.startTime) }}</p>
+                    <p class="text-[10px] text-slate-400">{{ selectedDate }}</p>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Phòng Chiếu</span>
+                    <p class="font-extrabold text-white text-sm mt-0.5">{{ selectedShowtime?.screenName }}</p>
+                    <p class="text-[10px] text-indigo-300">{{ selectedShowtime?.screenType }}</p>
+                  </div>
+                  <div class="col-span-2 sm:col-span-2">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Ghế Đã Đặt</span>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span
+                        v-for="s in selectedSeats"
+                        :key="s.seatCode"
+                        class="px-2 py-0.5 rounded text-[11px] font-black"
+                        :class="s.zone === 'SWEETBOX' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : s.zone === 'VIP' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-200'"
+                      >
+                        {{ s.seatCode }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- F&B Concessions Pickup Box (If Concessions Ordered) -->
+                <div v-if="concessionsSubtotal > 0" class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+                  <div class="space-y-0.5 min-w-0">
+                    <div class="flex items-center gap-1.5 font-bold text-amber-300">
+                      <Sparkles class="w-3.5 h-3.5" />
+                      <span>Mã Nhận Bắp Nước Tại Quầy Concession:</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 truncate">
+                      <template v-for="[idStr, qty] in Object.entries(selectedConcessions)" :key="idStr">
+                        {{ concessions.find((c) => c.id === Number(idStr))?.name }} x{{ qty }} &bull;
+                      </template>
+                    </p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <span class="text-[9px] text-amber-400/80 uppercase font-mono">VOUCHER CODE</span>
+                    <div class="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-mono font-black text-xs shadow-sm">
+                      {{ concessionVoucherCode }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fast Gate QR Code & Check-in Instruction -->
+                <div class="flex items-center gap-4 bg-slate-950/90 p-4 rounded-2xl border border-white/[0.08]">
+                  <div class="w-20 h-20 rounded-xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-lg">
+                    <img
+                      :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=eventhub://cinema/${completedBooking?.bookingCode}`"
+                      alt="Cinema Ticket QR"
+                      class="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div class="space-y-1 text-xs min-w-0">
+                    <p class="font-extrabold text-white flex items-center gap-1.5">
+                      <CheckCircle2 class="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Cổng Soát Vé Tự Động Anti-Passback</span>
+                    </p>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                      Quét mã QR tại cổng kiểm soát hoặc để nhân viên rạp quét bằng máy đọc laser.
+                    </p>
+                    <p class="text-[10px] text-slate-500 font-mono">
+                      Tổng đã thanh toán: <strong class="text-white">{{ formatCurrency(totalAmount) }}</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                @click="printTicket"
+                class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs transition flex items-center gap-1.5 border border-white/10 cursor-pointer"
+              >
+                <Printer class="w-4 h-4" />
+                <span>In / Lưu Vé PDF</span>
+              </button>
               <router-link
                 to="/my-tickets"
                 @click="bookingModalOpen = false"
-                class="w-full sm:w-auto px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2"
+                class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs transition flex items-center gap-2 shadow-lg shadow-rose-600/30"
               >
                 <Ticket class="w-4 h-4" />
-                <span>Xem Vé Trong "Vé Của Tôi"</span>
+                <span>Xem Trong "Vé Của Tôi"</span>
               </router-link>
               <button
                 type="button"
                 @click="bookingModalOpen = false"
-                class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white font-medium text-xs transition cursor-pointer"
               >
                 Đóng
               </button>

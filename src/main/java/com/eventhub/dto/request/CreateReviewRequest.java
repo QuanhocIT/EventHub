@@ -28,4 +28,7 @@ public class CreateReviewRequest {
     @Size(max = 2000, message = "Review comment cannot exceed 2000 characters")
     @Schema(example = "The speaker sessions were wonderful and venue organization was top notch!", description = "Review feedback text")
     private String comment;
+
+    @Schema(description = "Optional list of uploaded review photo URLs")
+    private java.util.List<String> imageUrls;
 }

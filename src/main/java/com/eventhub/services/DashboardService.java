@@ -11,4 +11,6 @@ public interface DashboardService {
     EventAnalyticsResponse getEventAnalytics(Long eventId, String username);
 
     AdminDashboardResponse getAdminDashboard();
+
+    byte[] exportEventReportCsv(Long eventId, String username);
 }

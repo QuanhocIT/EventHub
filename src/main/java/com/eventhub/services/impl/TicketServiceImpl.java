@@ -45,6 +45,7 @@ public class TicketServiceImpl implements TicketService {
     private final EventRepository eventRepository;
     private final TicketTypeRepository ticketTypeRepository;
     private final QrCodeService qrCodeService;
+    private final com.eventhub.services.LoyaltyService loyaltyService;
 
     @Override
     @Transactional
@@ -134,6 +135,12 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket updated = ticketRepository.save(ticket);
         log.info("Ticket {} successfully checked in at {} by staff: {}", ticketCode, updated.getCheckedInAt(), staffUsername);
+
+        if (loyaltyService != null && updated.getBooking() != null && updated.getBooking().getUser() != null) {
+            String evTitle = updated.getEvent() != null ? updated.getEvent().getTitle() : "sự kiện";
+            loyaltyService.awardPoints(updated.getBooking().getUser(), 20, com.eventhub.enums.LoyaltyActivityType.GATE_CHECKIN_BONUS,
+                    "Thưởng check-in tại cổng sự kiện: " + evTitle + " (+20 pts)");
+        }
 
         String seatInfo = null;
         if (updated.getEventSeat() != null && updated.getEventSeat().getSeat() != null) {

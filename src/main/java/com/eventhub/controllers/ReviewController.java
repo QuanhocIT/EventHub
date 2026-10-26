@@ -112,4 +112,30 @@ public class ReviewController {
         reviewService.deleteReview(reviewId, principal.getName(), isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Review deleted successfully", null));
     }
+
+    @Operation(summary = "Thả tim / Đánh giá hữu ích cho review", description = "Tăng số lượt hữu ích (helpful likes) của review")
+    @SecurityRequirement(name = "BearerAuth")
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/api/v1/reviews/{reviewId}/like")
+    public ResponseEntity<ApiResponse<ReviewResponse>> toggleLikeReview(
+            @PathVariable Long reviewId,
+            Principal principal
+    ) {
+        ReviewResponse response = reviewService.toggleLikeReview(reviewId, principal != null ? principal.getName() : "user");
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật lượt thích thành công", response));
+    }
+
+    @Operation(summary = "Ban tổ chức / Admin phản hồi đánh giá của khán giả", description = "Cho phép Organizer phản hồi trực tiếp ý kiến khán giả")
+    @SecurityRequirement(name = "BearerAuth")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @PostMapping("/api/v1/reviews/{reviewId}/reply")
+    public ResponseEntity<ApiResponse<ReviewResponse>> replyToReview(
+            @PathVariable Long reviewId,
+            @RequestBody java.util.Map<String, String> body,
+            Principal principal
+    ) {
+        String replyText = body != null ? body.getOrDefault("reply", "") : "";
+        ReviewResponse response = reviewService.replyToReview(reviewId, replyText, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success("Phản hồi đánh giá thành công", response));
+    }
 }

@@ -63,6 +63,9 @@ class TicketServiceTest {
     @Mock
     private QrCodeService qrCodeService;
 
+    @Mock
+    private LoyaltyService loyaltyService;
+
     @InjectMocks
     private TicketServiceImpl ticketService;
 

@@ -65,6 +65,9 @@ class ReviewServiceTest {
     @Spy
     private ReviewMapper reviewMapper = new ReviewMapper();
 
+    @Mock
+    private LoyaltyService loyaltyService;
+
     @InjectMocks
     private ReviewServiceImpl reviewService;
 

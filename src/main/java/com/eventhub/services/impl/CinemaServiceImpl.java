@@ -56,6 +56,7 @@ public class CinemaServiceImpl implements CinemaService {
     private final ConcessionItemRepository concessionRepository;
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final com.eventhub.services.LoyaltyService loyaltyService;
 
     @PostConstruct
     @Transactional
@@ -397,12 +398,22 @@ public class CinemaServiceImpl implements CinemaService {
         // Calculate seats total
         double seatSubtotal = 0;
         List<CinemaSeatResponse> layout = getShowtimeSeats(request.getShowtimeId());
+        List<com.eventhub.dto.response.BookingItemResponse> itemResponses = new ArrayList<>();
+
         for (String code : request.getSeatCodes()) {
             CinemaSeatResponse s = layout.stream()
                     .filter(item -> item.getSeatCode().equalsIgnoreCase(code))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Mã ghế không hợp lệ: " + code));
             seatSubtotal += s.getPrice();
+
+            itemResponses.add(com.eventhub.dto.response.BookingItemResponse.builder()
+                    .ticketTypeName("Ghế " + s.getZone() + " (" + s.getSeatCode() + ")")
+                    .seatInfo(s.getSeatCode())
+                    .quantity(1)
+                    .unitPrice(BigDecimal.valueOf(s.getPrice()))
+                    .subtotal(BigDecimal.valueOf(s.getPrice()))
+                    .build());
         }
 
         // Calculate F&B concessions
@@ -412,12 +423,33 @@ public class CinemaServiceImpl implements CinemaService {
             for (CinemaBookingRequest.ConcessionOrderRequest item : request.getConcessions()) {
                 ConcessionItem ci = concessionRepository.findById(item.getConcessionId())
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món bắp nước #" + item.getConcessionId()));
-                concessionSubtotal += ci.getPrice() * item.getQuantity();
+                double itemTotal = ci.getPrice() * item.getQuantity();
+                concessionSubtotal += itemTotal;
                 concessionsSummary.append(ci.getName()).append(" x").append(item.getQuantity()).append(", ");
+
+                itemResponses.add(com.eventhub.dto.response.BookingItemResponse.builder()
+                        .ticketTypeName("Combo Bắp Nước - " + ci.getName())
+                        .seatInfo("Quầy Concession")
+                        .quantity(item.getQuantity())
+                        .unitPrice(BigDecimal.valueOf(ci.getPrice()))
+                        .subtotal(BigDecimal.valueOf(itemTotal))
+                        .build());
             }
         }
 
         double total = seatSubtotal + concessionSubtotal;
+        BigDecimal discount = BigDecimal.ZERO;
+        String coupon = request.getCouponCode();
+        if (coupon != null && !coupon.isBlank()) {
+            if ("EVENTHUB2026".equalsIgnoreCase(coupon.trim())) {
+                discount = BigDecimal.valueOf(total * 0.15).setScale(0, java.math.RoundingMode.HALF_UP);
+            }
+        }
+        BigDecimal finalTotal = BigDecimal.valueOf(total).subtract(discount);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+
         String bookingCode = "CINEMA-" + LocalDate.now().toString().replace("-", "") + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
         Booking booking = Booking.builder()
@@ -425,15 +457,22 @@ public class CinemaServiceImpl implements CinemaService {
                 .user(user)
                 .showtime(showtime)
                 .bookingType("CINEMA")
+                .couponCode(coupon)
                 .concessionsJson(concessionsSummary.length() > 2 ? concessionsSummary.substring(0, concessionsSummary.length() - 2) : "Không có bắp nước")
                 .subtotalAmount(BigDecimal.valueOf(total))
-                .discountAmount(BigDecimal.ZERO)
-                .totalAmount(BigDecimal.valueOf(total))
+                .discountAmount(discount)
+                .totalAmount(finalTotal)
                 .status(BookingStatus.CONFIRMED)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .build();
 
         Booking saved = bookingRepository.save(booking);
+
+        if (loyaltyService != null && finalTotal.compareTo(BigDecimal.ZERO) > 0) {
+            int pts = Math.max(10, (int) (finalTotal.doubleValue() / 10000.0));
+            loyaltyService.awardPoints(user, pts, com.eventhub.enums.LoyaltyActivityType.BOOKING_REWARD,
+                    "Tích điểm xem phim (" + showtime.getMovie().getTitle() + "): +" + pts + " pts");
+        }
 
         return BookingResponse.builder()
                 .id(saved.getId())
@@ -441,11 +480,12 @@ public class CinemaServiceImpl implements CinemaService {
                 .username(user.getUsername())
                 .eventTitle(showtime.getMovie().getTitle() + " (" + showtime.getScreen().getScreenName() + ")")
                 .status(saved.getStatus())
+                .couponCode(saved.getCouponCode())
                 .subtotalAmount(saved.getSubtotalAmount())
                 .discountAmount(saved.getDiscountAmount())
                 .totalAmount(saved.getTotalAmount())
                 .expiresAt(saved.getExpiresAt())
-                .items(Collections.emptyList())
+                .items(itemResponses)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

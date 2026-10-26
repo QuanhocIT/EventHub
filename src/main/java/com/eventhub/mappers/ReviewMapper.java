@@ -26,6 +26,16 @@ public class ReviewMapper {
 
         Long eventId = review.getEvent() != null ? review.getEvent().getId() : null;
 
+        java.util.List<String> imageUrls = java.util.Collections.emptyList();
+        if (review.getImagesJson() != null && !review.getImagesJson().isBlank()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                imageUrls = om.readValue(review.getImagesJson(), new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+            } catch (Exception e) {
+                imageUrls = java.util.Arrays.asList(review.getImagesJson().split(","));
+            }
+        }
+
         return ReviewResponse.builder()
                 .id(review.getId())
                 .eventId(eventId)
@@ -34,6 +44,11 @@ public class ReviewMapper {
                 .reviewerAvatar(reviewerAvatar)
                 .rating(review.getRating())
                 .comment(review.getComment())
+                .imageUrls(imageUrls)
+                .likesCount(review.getLikesCount() != null ? review.getLikesCount() : 0)
+                .isLiked(false)
+                .organizerReply(review.getOrganizerReply())
+                .organizerReplyAt(review.getOrganizerReplyAt())
                 .isVerifiedAttendee(review.getIsVerifiedAttendee())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())

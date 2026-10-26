@@ -63,7 +63,17 @@ const getRatingColor = (code: string) => {
 }
 
 const bookShowtime = (movie: MovieAtTheater, time: TheaterShowtime) => {
-  router.push(`/movies/${movie.slug || movie.id}`)
+  router.push({
+    path: `/movies/${movie.slug || movie.id}`,
+    query: {
+      complexId: theater.value?.id,
+      complexName: theater.value?.name,
+      time: time.time,
+      format: time.format,
+      screen: time.screen,
+      autoBook: 'true',
+    },
+  })
 }
 
 const copyShareLink = () => {

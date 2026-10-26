@@ -20,4 +20,8 @@ public interface ReviewService {
     EventRatingSummaryResponse getEventRatingSummary(Long eventId);
 
     ReviewResponse getUserReviewForEvent(Long eventId, String username);
+
+    ReviewResponse toggleLikeReview(Long reviewId, String username);
+
+    ReviewResponse replyToReview(Long reviewId, String organizerReply, String username);
 }

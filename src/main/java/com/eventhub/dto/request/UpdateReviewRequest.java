@@ -28,4 +28,7 @@ public class UpdateReviewRequest {
     @Size(max = 2000, message = "Review comment cannot exceed 2000 characters")
     @Schema(example = "Updated feedback after receiving slides and recordings.", description = "Updated review feedback text")
     private String comment;
+
+    @Schema(description = "Optional list of updated review photo URLs")
+    private java.util.List<String> imageUrls;
 }

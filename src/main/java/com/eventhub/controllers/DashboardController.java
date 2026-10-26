@@ -44,6 +44,20 @@ public class DashboardController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @Operation(summary = "Export event analytics report as CSV (Organizer / Admin)")
+    @GetMapping("/organizer/events/{eventId}/export-report")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<byte[]> exportEventReport(
+            @PathVariable Long eventId,
+            Principal principal
+    ) {
+        byte[] csvData = dashboardService.exportEventReportCsv(eventId, principal.getName());
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"event_report_" + eventId + ".csv\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvData);
+    }
+
     @Operation(summary = "Get platform-wide admin dashboard statistics (Admin only)")
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")

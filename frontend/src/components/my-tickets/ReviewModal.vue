@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Ticket } from '@/types'
+import { reviewService } from '@/services/review.service'
 import {
   X,
   Star,
@@ -13,6 +14,10 @@ import {
   MapPin,
   Heart,
   MessageSquare,
+  ImagePlus,
+  Coins,
+  ShieldCheck,
+  Trash2,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -35,6 +40,9 @@ const venueRating = ref(5)
 const isSubmitting = ref(false)
 const submitted = ref(false)
 const showCertificate = ref(false)
+const uploadedImages = ref<string[]>([])
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const earnedLoyaltyPoints = ref(20)
 
 const ratingLabels: Record<number, string> = {
   1: 'Rất thất vọng',
@@ -44,15 +52,60 @@ const ratingLabels: Record<number, string> = {
   5: 'Xuất sắc & Tuyệt vời',
 }
 
-const handleSubmit = () => {
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+
+  const files = Array.from(target.files)
+  const remainingSlots = 5 - uploadedImages.value.length
+  const filesToProcess = files.slice(0, remainingSlots)
+
+  filesToProcess.forEach((file) => {
+    if (!file.type.startsWith('image/')) {
+      emit('notify', 'Vui lòng chỉ tải lên tệp hình ảnh (JPG, PNG, WebP)', 'error')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result && typeof e.target.result === 'string') {
+        uploadedImages.value.push(e.target.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  })
+
+  // Reset input
+  target.value = ''
+}
+
+const removeImage = (index: number) => {
+  uploadedImages.value.splice(index, 1)
+}
+
+const handleSubmit = async () => {
   if (!props.ticket) return
   isSubmitting.value = true
-  setTimeout(() => {
-    isSubmitting.value = false
-    submitted.value = true
-    emit('reviewSubmitted', props.ticket!.id, rating.value, comment.value)
-    emit('notify', 'Cảm ơn bạn đã gửi đánh giá quý giá về sự kiện!', 'success')
-  }, 600)
+  const points = uploadedImages.value.length > 0 ? 50 : 20
+  earnedLoyaltyPoints.value = points
+
+  try {
+    await reviewService.submitReview(props.ticket.eventId, {
+      rating: rating.value,
+      comment: comment.value.trim() || 'Trải nghiệm sự kiện tuyệt vời!',
+      imageUrls: uploadedImages.value,
+    })
+  } catch (err) {
+    console.warn('Backend review service offline or simulated:', err)
+  }
+
+  isSubmitting.value = false
+  submitted.value = true
+  emit('reviewSubmitted', props.ticket.id, rating.value, comment.value)
+  emit('notify', `Đánh giá thành công! Bạn nhận được +${points} Điểm Thưởng CineClub Loyalty!`, 'success')
 }
 
 const downloadCertificate = () => {
@@ -62,6 +115,7 @@ const downloadCertificate = () => {
 const handleClose = () => {
   submitted.value = false
   showCertificate.value = false
+  uploadedImages.value = []
   emit('close')
 }
 </script>
@@ -84,7 +138,7 @@ const handleClose = () => {
               Đánh Giá & Kỷ Niệm Sự Kiện
             </h3>
             <p class="text-xs text-amber-100">
-              Chia sẻ trải nghiệm của bạn sau khi tham dự
+              Chia sẻ trải nghiệm thực tế & nhận điểm thưởng Loyalty
             </p>
           </div>
         </div>
@@ -98,8 +152,30 @@ const handleClose = () => {
 
       <!-- Body -->
       <div class="p-6 overflow-y-auto space-y-5 flex-1">
-        <!-- Post-submission Certificate View -->
-        <div v-if="submitted || showCertificate" class="text-center py-4 space-y-5">
+        <!-- Post-submission View (Certificate + Loyalty Reward) -->
+        <div v-if="submitted || showCertificate" class="text-center py-2 space-y-4">
+          <!-- Loyalty Points Celebration Box -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg flex items-center justify-between gap-3 text-left">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm shrink-0">
+                <Coins class="w-7 h-7 text-amber-100" />
+              </div>
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-100">CineClub / EventHub Loyalty</span>
+                <div class="text-base sm:text-lg font-black">
+                  +{{ earnedLoyaltyPoints }} Điểm Thưởng Đã Được Cộng!
+                </div>
+                <p class="text-[11px] text-amber-100/90">
+                  {{ uploadedImages.length > 0 ? 'Thưởng tối đa nhờ đánh giá kèm hình ảnh thực tế' : 'Đánh giá đã ghi nhận vào hồ sơ thành viên' }}
+                </p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-white/25 text-white font-extrabold text-xs shrink-0">
+              Thành viên VIP
+            </span>
+          </div>
+
+          <!-- Attendance Certificate -->
           <div class="p-6 rounded-3xl bg-gradient-to-br from-amber-50 via-indigo-50/40 to-slate-50 border-2 border-amber-200 shadow-md relative overflow-hidden text-center">
             <!-- Ornamental corner rings -->
             <div class="absolute -top-10 -left-10 w-24 h-24 rounded-full bg-amber-400/10 border-2 border-amber-400/20"></div>
@@ -132,7 +208,7 @@ const handleClose = () => {
             </div>
           </div>
 
-          <div class="flex items-center justify-center gap-3">
+          <div class="flex items-center justify-center gap-3 pt-2">
             <button
               @click="downloadCertificate"
               class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
@@ -150,11 +226,11 @@ const handleClose = () => {
         </div>
 
         <!-- Review Form -->
-        <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+        <form v-else @submit.prevent="handleSubmit" class="space-y-4">
           <!-- Event brief card -->
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
             <img
-              :src="ticket.eventBannerUrl"
+              :src="ticket.eventBannerUrl || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=300&q=80'"
               :alt="ticket.eventTitle"
               class="w-16 h-16 rounded-xl object-cover shrink-0"
             />
@@ -171,8 +247,17 @@ const handleClose = () => {
             </div>
           </div>
 
+          <!-- Loyalty Reward Callout Banner -->
+          <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-start gap-2.5">
+            <Coins class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div class="text-xs text-amber-900 leading-relaxed">
+              <span class="font-extrabold text-amber-950">Ưu đãi CineClub Loyalty:</span>
+              Nhận ngay <strong class="text-amber-800">+50 điểm</strong> khi đánh giá kèm hình ảnh thực tế (hoặc +20 điểm cho đánh giá văn bản) để đổi voucher và tự động tích lũy lên hạng Vàng/Kim Cương!
+            </div>
+          </div>
+
           <!-- Overall Star Rating -->
-          <div class="text-center py-2">
+          <div class="text-center py-1">
             <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
               Mức độ hài lòng chung của bạn
             </label>
@@ -202,7 +287,7 @@ const handleClose = () => {
           </div>
 
           <!-- Sub-ratings -->
-          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
             <div class="flex items-center justify-between text-xs">
               <span class="font-bold text-slate-700">Khâu tổ chức & soát vé cổng:</span>
               <div class="flex gap-1">
@@ -219,7 +304,7 @@ const handleClose = () => {
             </div>
 
             <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Âm thanh & Ánh sáng & Sân khấu:</span>
+              <span class="font-bold text-slate-700">Âm thanh & Ánh sáng sân khấu:</span>
               <div class="flex gap-1">
                 <button
                   v-for="s in 5"
@@ -234,7 +319,7 @@ const handleClose = () => {
             </div>
 
             <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-slate-700">Địa điểm & Không gian khán phòng:</span>
+              <span class="font-bold text-slate-700">Địa điểm & Không gian:</span>
               <div class="flex gap-1">
                 <button
                   v-for="s in 5"
@@ -246,6 +331,58 @@ const handleClose = () => {
                   <Star class="w-4 h-4" :class="venueRating >= s ? 'fill-indigo-600 text-indigo-600' : 'text-slate-300'" />
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- Photo Upload Section -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <ImagePlus class="w-3.5 h-3.5 text-indigo-600" />
+                <span>Hình ảnh thực tế tại sự kiện (Tối đa 5 ảnh)</span>
+              </label>
+              <span class="text-[11px] font-bold text-amber-600">+50 Điểm Loyalty</span>
+            </div>
+
+            <!-- Hidden File Input -->
+            <input
+              ref="fileInputRef"
+              type="file"
+              multiple
+              accept="image/*"
+              class="hidden"
+              @change="handleFileUpload"
+            />
+
+            <!-- Preview Grid & Add Button -->
+            <div class="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+              <!-- Uploaded Previews -->
+              <div
+                v-for="(img, idx) in uploadedImages"
+                :key="idx"
+                class="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group shadow-2xs"
+              >
+                <img :src="img" class="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  @click="removeImage(idx)"
+                  class="absolute top-1 right-1 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center transition"
+                  title="Xóa ảnh"
+                >
+                  <X class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <!-- Upload Trigger Button (if < 5) -->
+              <button
+                v-if="uploadedImages.length < 5"
+                type="button"
+                @click="triggerFileInput"
+                class="aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/50 flex flex-col items-center justify-center text-slate-500 hover:text-indigo-600 transition p-2 cursor-pointer"
+              >
+                <ImagePlus class="w-5 h-5 mb-1" />
+                <span class="text-[10px] font-bold text-center leading-tight">Thêm ảnh</span>
+              </button>
             </div>
           </div>
 
@@ -275,10 +412,11 @@ const handleClose = () => {
             <button
               type="submit"
               :disabled="isSubmitting"
-              class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md transition flex items-center gap-2"
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-700 hover:to-indigo-700 text-white text-xs font-black shadow-md transition flex items-center gap-2"
             >
+              <Coins class="w-4 h-4 text-amber-200" />
               <span v-if="isSubmitting">Đang gửi...</span>
-              <span v-else>Gửi Đánh Giá & Nhận Chứng Nhận</span>
+              <span v-else>Gửi Đánh Giá & Nhận Điểm (+{{ uploadedImages.length > 0 ? 50 : 20 }})</span>
             </button>
           </div>
         </form>

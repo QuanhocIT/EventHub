@@ -39,6 +39,21 @@ public class ReviewResponse {
     @Schema(example = "true", description = "True if reviewer has verified confirmed booking or checked in")
     private Boolean isVerifiedAttendee;
 
+    @Schema(description = "List of photo URLs attached to the review")
+    private java.util.List<String> imageUrls;
+
+    @Schema(example = "12", description = "Number of helpful likes from other attendees")
+    private Integer likesCount;
+
+    @Schema(example = "false")
+    private Boolean isLiked;
+
+    @Schema(example = "Cảm ơn bạn rất nhiều vì đã tham dự sự kiện!")
+    private String organizerReply;
+
+    @Schema(example = "2026-10-21T11:00:00")
+    private LocalDateTime organizerReplyAt;
+
     @Schema(example = "2026-10-21T10:00:00")
     private LocalDateTime createdAt;
 

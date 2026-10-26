@@ -13,6 +13,7 @@ import com.eventhub.exceptions.ForbiddenException;
 import com.eventhub.repositories.BookingRepository;
 import com.eventhub.repositories.EventRepository;
 import com.eventhub.repositories.TicketRepository;
+import com.eventhub.repositories.TicketTypeRepository;
 import com.eventhub.repositories.UserRepository;
 import com.eventhub.services.impl.DashboardServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ class DashboardServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private TicketTypeRepository ticketTypeRepository;
 
     @InjectMocks
     private DashboardServiceImpl dashboardService;

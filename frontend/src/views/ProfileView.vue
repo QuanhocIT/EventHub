@@ -3,7 +3,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userService } from '@/services/user.service'
-import type { User, Booking, FollowedOrganizerItem } from '@/types'
+import { loyaltyService } from '@/services/loyalty.service'
+import type { User, Booking, FollowedOrganizerItem, LoyaltyProfile } from '@/types'
 import {
   User as UserIcon,
   Shield,
@@ -29,14 +30,23 @@ import {
   ShieldCheck,
   Building2,
   Users,
+  Coins,
+  Crown,
+  Gift,
+  Zap,
+  Award,
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-type ProfileTab = 'profile' | 'security' | 'orders' | 'following'
+type ProfileTab = 'profile' | 'loyalty' | 'security' | 'orders' | 'following'
 const activeTab = ref<ProfileTab>('profile')
+
+// Loyalty Profile State
+const loyaltyProfile = ref<LoyaltyProfile | null>(null)
+const loadingLoyalty = ref(false)
 
 // User Profile State
 const profile = ref<User>({
@@ -239,11 +249,24 @@ const handleUnfollow = async (organizerId: number, orgName: string) => {
   }
 }
 
+const loadLoyalty = async () => {
+  loadingLoyalty.value = true
+  try {
+    const data = await loyaltyService.getMyProfile()
+    loyaltyProfile.value = data
+  } catch (err) {
+    console.warn('Could not load loyalty profile:', err)
+  } finally {
+    loadingLoyalty.value = false
+  }
+}
+
 onMounted(() => {
   if (route.query.tab) {
     activeTab.value = route.query.tab as ProfileTab
   }
   loadProfile()
+  loadLoyalty()
   loadBookings()
   loadFollowed()
 })
@@ -341,6 +364,19 @@ onMounted(() => {
           >
             <UserIcon class="w-4 h-4" />
             <span>Hồ sơ cá nhân</span>
+          </button>
+
+          <button
+            type="button"
+            @click="activeTab = 'loyalty'"
+            class="py-3 px-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition cursor-pointer shrink-0"
+            :class="activeTab === 'loyalty' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'"
+          >
+            <Crown class="w-4 h-4 text-amber-500" />
+            <span>Điểm Thưởng & Hạng VIP</span>
+            <span v-if="loyaltyProfile" class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+              {{ loyaltyProfile.pointsBalance }} điểm
+            </span>
           </button>
 
           <button
@@ -463,6 +499,185 @@ onMounted(() => {
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- TAB: LOYALTY PROGRAM & VIP TIERS (CINECLUB / EVENTHUB) -->
+      <div v-else-if="activeTab === 'loyalty'" class="space-y-6">
+        <!-- VIP Card (Metallic / Glassmorphism) -->
+        <div class="relative rounded-3xl p-6 sm:p-8 overflow-hidden text-white shadow-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 border border-slate-800">
+          <!-- Background Glow Effect -->
+          <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-600/20 blur-3xl pointer-events-none"></div>
+
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <!-- Left: Card Info -->
+            <div class="space-y-3">
+              <div class="flex items-center gap-2.5">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-md">
+                  <Crown class="w-3.5 h-3.5 text-amber-400" />
+                  CineClub & EventHub VIP Pass
+                </span>
+                <span class="text-xs text-slate-400">&bull; Thẻ Thành Viên Số</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                <span>{{ loyaltyProfile?.tierDisplayName || 'Thành Viên Bạc' }}</span>
+                <Sparkles class="w-5 h-5 text-amber-400" />
+              </h2>
+              <p class="text-xs text-slate-300 max-w-md">
+                Chủ thẻ: <strong>{{ profile.fullName || authStore.user?.fullName || 'Khách Hàng' }}</strong> &bull; Tận hưởng chiết khấu <strong>{{ loyaltyProfile?.discountPercent || 5 }}%</strong> cho toàn bộ vé sự kiện và phim chiếu rạp.
+              </p>
+            </div>
+
+            <!-- Right: Points Balance Badge -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-4 shrink-0">
+              <div class="w-12 h-12 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center">
+                <Coins class="w-7 h-7 text-amber-300" />
+              </div>
+              <div>
+                <span class="text-[11px] text-amber-200 font-bold uppercase tracking-wider block">Điểm Khả Dụng</span>
+                <div class="text-2xl sm:text-3xl font-black text-amber-300">
+                  {{ (loyaltyProfile?.pointsBalance || 0).toLocaleString('vi-VN') }} <span class="text-xs text-white font-normal">điểm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Bar to Next Tier -->
+          <div class="mt-6 pt-6 border-t border-white/10 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-300">
+                Tiến trình lên hạng kế tiếp: <strong class="text-amber-300">{{ loyaltyProfile?.nextTierProgressPercent || 35 }}%</strong>
+              </span>
+              <span class="text-slate-400">
+                Còn thiếu <strong class="text-white">{{ (loyaltyProfile?.nextTierPointsRequired || 250).toLocaleString('vi-VN') }}</strong> điểm
+              </span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-white/10 overflow-hidden p-0.5 border border-white/15">
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-indigo-400 transition-all duration-700 shadow-sm"
+                :style="{ width: `${loyaltyProfile?.nextTierProgressPercent || 35}%` }"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tier Matrix & Privileges -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div
+            class="p-4 rounded-2xl border transition-all"
+            :class="loyaltyProfile?.tier === 'MEMBER' ? 'bg-amber-50/50 border-amber-300 shadow-sm ring-2 ring-amber-400/20' : 'bg-white border-slate-200'"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black uppercase text-slate-500">MEMBER</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">0đ</span>
+            </div>
+            <h4 class="text-sm font-black text-slate-900">Thành Viên</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Tích 1 điểm / 10.000đ khi đặt vé</p>
+            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
+              <div>&bull; Quà sinh nhật bất ngờ</div>
+              <div>&bull; Tích điểm review sự kiện</div>
+            </div>
+          </div>
+
+          <div
+            class="p-4 rounded-2xl border transition-all"
+            :class="loyaltyProfile?.tier === 'SILVER' ? 'bg-indigo-50/50 border-indigo-300 shadow-sm ring-2 ring-indigo-400/20' : 'bg-white border-slate-200'"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black uppercase text-indigo-600">SILVER</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">500 điểm</span>
+            </div>
+            <h4 class="text-sm font-black text-slate-900">Hạng Bạc (Silver)</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Giảm ngay 5% mọi đơn hàng</p>
+            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
+              <div>&bull; Giảm giá 5% vé sự kiện/phim</div>
+              <div>&bull; Đổi voucher đặc quyền</div>
+            </div>
+          </div>
+
+          <div
+            class="p-4 rounded-2xl border transition-all"
+            :class="loyaltyProfile?.tier === 'GOLD' ? 'bg-amber-50/50 border-amber-400 shadow-sm ring-2 ring-amber-400/30' : 'bg-white border-slate-200'"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black uppercase text-amber-600">GOLD</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">1.500 điểm</span>
+            </div>
+            <h4 class="text-sm font-black text-slate-900">Hạng Vàng (Gold)</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Giảm ngay 10% mọi đơn hàng</p>
+            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
+              <div>&bull; Giảm giá 10% trọn đời hạng</div>
+              <div>&bull; Quyền mua vé sớm Early Bird</div>
+              <div>&bull; Miễn phí combo bắp nước</div>
+            </div>
+          </div>
+
+          <div
+            class="p-4 rounded-2xl border transition-all"
+            :class="loyaltyProfile?.tier === 'DIAMOND' ? 'bg-purple-50/50 border-purple-400 shadow-sm ring-2 ring-purple-400/30' : 'bg-white border-slate-200'"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black uppercase text-purple-600">DIAMOND</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">4.000 điểm</span>
+            </div>
+            <h4 class="text-sm font-black text-slate-900">Kim Cương (Diamond)</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Giảm ngay 15% VIP Lounge</p>
+            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
+              <div>&bull; Giảm giá 15% tối đa</div>
+              <div>&bull; Lối đi soát vé ưu tiên VIP</div>
+              <div>&bull; Quà tặng VIP EventHub Box</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loyalty Points Activity History -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-black text-slate-900">Lịch Sử Biến Động Điểm Thưởng</h3>
+              <p class="text-xs text-slate-500">Chi tiết các lượt tích điểm mua vé, review kèm ảnh và check-in</p>
+            </div>
+            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-xl">
+              Cập nhật thời gian thực
+            </span>
+          </div>
+
+          <div v-if="!loyaltyProfile?.recentTransactions?.length" class="py-8 text-center text-slate-400">
+            <Coins class="w-10 h-10 mx-auto text-slate-300 mb-2" />
+            <p class="text-xs">Chưa có giao dịch tích điểm nào gần đây.</p>
+          </div>
+
+          <div v-else class="divide-y divide-slate-100">
+            <div
+              v-for="tx in loyaltyProfile.recentTransactions"
+              :key="tx.id"
+              class="py-3.5 flex items-center justify-between gap-3"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold"
+                  :class="tx.pointsChange >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+                >
+                  <Sparkles v-if="tx.pointsChange >= 0" class="w-4 h-4" />
+                  <Coins v-else class="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 class="text-xs font-black text-slate-900">{{ tx.activityName }}</h4>
+                  <p class="text-[11px] text-slate-400">{{ tx.description || formatDate(tx.createdAt) }}</p>
+                </div>
+              </div>
+
+              <div class="text-right">
+                <span
+                  class="text-xs font-black"
+                  :class="tx.pointsChange >= 0 ? 'text-emerald-600' : 'text-rose-600'"
+                >
+                  {{ tx.pointsChange >= 0 ? `+${tx.pointsChange}` : tx.pointsChange }} điểm
+                </span>
+                <span class="block text-[10px] text-slate-400">{{ formatDate(tx.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- TAB 2: SECURITY & CHANGE PASSWORD -->

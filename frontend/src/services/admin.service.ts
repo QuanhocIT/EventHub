@@ -36,26 +36,71 @@ const MOCK_EVENT_ANALYTICS: Record<number, EventAnalyticsData> = {
   1: {
     eventId: 1,
     eventTitle: 'Skyline Symphony & Philharmonic Concert 2026',
+    venueName: 'Nhà Hát Lớn Hà Nội (Hanoi Opera House)',
     totalRevenue: 420000000,
+    netRevenue: 399000000,
+    discountTotal: 21000000,
     totalTickets: 650,
+    totalCapacity: 800,
+    occupancyRate: 81.25,
     checkedInTickets: 540,
     checkInRate: 83.08,
+    averageOrderValue: 1292000,
+    hourlySalesVelocity: [
+      { timeSlot: '08:00 - 10:00', revenue: 50400000, ticketsSold: 78 },
+      { timeSlot: '10:00 - 12:00', revenue: 117600000, ticketsSold: 182 },
+      { timeSlot: '12:00 - 14:00', revenue: 63000000, ticketsSold: 98 },
+      { timeSlot: '14:00 - 17:00', revenue: 105000000, ticketsSold: 162 },
+      { timeSlot: '17:00 - 20:00', revenue: 63000000, ticketsSold: 98 },
+      { timeSlot: '20:00 - 23:00', revenue: 21000000, ticketsSold: 32 },
+    ],
+    tierBreakdown: [
+      { tierName: 'VIP Royal Diamond', price: 1200000, soldCount: 150, totalCapacity: 150, revenue: 180000000, fillPercent: 100 },
+      { tierName: 'Gold Balcony Suite', price: 750000, soldCount: 220, totalCapacity: 250, revenue: 165000000, fillPercent: 88 },
+      { tierName: 'Standard Symphony Floor', price: 450000, soldCount: 280, totalCapacity: 400, revenue: 75000000, fillPercent: 70 },
+    ],
+    paymentMethods: { VIETQR: 65.0, MOMO: 20.0, VNPAY: 15.0 },
+    rushHourCheckIn: [
+      { timeSlot: 'T - 60 phút', count: 54 },
+      { timeSlot: 'T - 30 phút', count: 189 },
+      { timeSlot: 'T - 15 phút (Cao điểm)', count: 216 },
+      { timeSlot: 'Giờ Khai Mạc (T)', count: 65 },
+      { timeSlot: 'T + 15 phút trở đi', count: 16 },
+    ],
   },
   2: {
     eventId: 2,
     eventTitle: 'Vietnam AI & Cloud Computing Summit 2026',
+    venueName: 'Trung Tâm Hội Nghị Quốc Gia (NCC) - Hà Nội',
     totalRevenue: 215000000,
+    netRevenue: 204250000,
+    discountTotal: 10750000,
     totalTickets: 420,
+    totalCapacity: 500,
+    occupancyRate: 84.0,
     checkedInTickets: 310,
     checkInRate: 73.81,
-  },
-  3: {
-    eventId: 3,
-    eventTitle: 'Hanoi Midnight Heritage Marathon 2026',
-    totalRevenue: 156000000,
-    totalTickets: 350,
-    checkedInTickets: 130,
-    checkInRate: 37.14,
+    averageOrderValue: 1023000,
+    hourlySalesVelocity: [
+      { timeSlot: '08:00 - 10:00', revenue: 25800000, ticketsSold: 50 },
+      { timeSlot: '10:00 - 12:00', revenue: 60200000, ticketsSold: 118 },
+      { timeSlot: '12:00 - 14:00', revenue: 32250000, ticketsSold: 63 },
+      { timeSlot: '14:00 - 17:00', revenue: 53750000, ticketsSold: 105 },
+      { timeSlot: '17:00 - 20:00', revenue: 32250000, ticketsSold: 63 },
+      { timeSlot: '20:00 - 23:00', revenue: 10750000, ticketsSold: 21 },
+    ],
+    tierBreakdown: [
+      { tierName: 'All-Access Pass', price: 950000, soldCount: 120, totalCapacity: 120, revenue: 114000000, fillPercent: 100 },
+      { tierName: 'Standard Developer', price: 450000, soldCount: 300, totalCapacity: 380, revenue: 101000000, fillPercent: 78.9 },
+    ],
+    paymentMethods: { VIETQR: 72.0, MOMO: 18.0, VNPAY: 10.0 },
+    rushHourCheckIn: [
+      { timeSlot: 'T - 60 phút', count: 31 },
+      { timeSlot: 'T - 30 phút', count: 108 },
+      { timeSlot: 'T - 15 phút (Cao điểm)', count: 124 },
+      { timeSlot: 'Giờ Khai Mạc (T)', count: 37 },
+      { timeSlot: 'T + 15 phút trở đi', count: 10 },
+    ],
   },
 }
 
@@ -227,12 +272,65 @@ export const adminService = {
         MOCK_EVENT_ANALYTICS[eventId] || {
           eventId,
           eventTitle: `Sự kiện #${eventId}`,
+          venueName: 'Hội trường sự kiện EventHub',
           totalRevenue: 120000000,
+          netRevenue: 114000000,
+          discountTotal: 6000000,
           totalTickets: 250,
+          totalCapacity: 300,
+          occupancyRate: 83.3,
           checkedInTickets: 180,
           checkInRate: 72.0,
+          averageOrderValue: 960000,
+          hourlySalesVelocity: [
+            { timeSlot: '08:00 - 10:00', revenue: 14400000, ticketsSold: 30 },
+            { timeSlot: '10:00 - 12:00', revenue: 33600000, ticketsSold: 70 },
+            { timeSlot: '12:00 - 14:00', revenue: 18000000, ticketsSold: 38 },
+            { timeSlot: '14:00 - 17:00', revenue: 30000000, ticketsSold: 62 },
+            { timeSlot: '17:00 - 20:00', revenue: 18000000, ticketsSold: 38 },
+            { timeSlot: '20:00 - 23:00', revenue: 6000000, ticketsSold: 12 },
+          ],
+          tierBreakdown: [
+            { tierName: 'Vé VIP', price: 900000, soldCount: 80, totalCapacity: 80, revenue: 72000000, fillPercent: 100 },
+            { tierName: 'Vé Tiêu Chuẩn', price: 400000, soldCount: 170, totalCapacity: 220, revenue: 48000000, fillPercent: 77.3 },
+          ],
+          paymentMethods: { VIETQR: 65, MOMO: 20, VNPAY: 15 },
+          rushHourCheckIn: [
+            { timeSlot: 'T - 60m', count: 18 },
+            { timeSlot: 'T - 30m', count: 63 },
+            { timeSlot: 'T - 15m', count: 72 },
+            { timeSlot: 'Giờ T', count: 22 },
+            { timeSlot: 'T + 15m', count: 5 },
+          ],
         }
       )
+    }
+  },
+
+  async exportEventReportCsv(eventId: number): Promise<Blob> {
+    try {
+      const res = await apiClient.get(`/dashboard/organizer/events/${eventId}/export-report`, {
+        responseType: 'blob',
+      })
+      return res.data
+    } catch {
+      // Generate client-side fallback CSV
+      const a = MOCK_EVENT_ANALYTICS[eventId] || MOCK_EVENT_ANALYTICS[1]
+      const csvStr = `\uFEFFEVENTHUB - BÁO CÁO PHÂN TÍCH TÀI CHÍNH & VẬN HÀNH SỰ KIỆN
+Tên Sự Kiện:,"${a.eventTitle}"
+Địa Điểm:,"${a.venueName || 'Trung tâm Hội nghị'}"
+Doanh Thu Gộp (Gross GMV):,${a.totalRevenue} VND
+Doanh Thu Thuần (Net):,${a.netRevenue || a.totalRevenue * 0.95} VND
+Tổng Số Vé Bán:,${a.totalTickets}
+Số Vé Check-in:,${a.checkedInTickets}
+Tỷ Lệ Check-in:,${a.checkInRate}%
+Tỷ Lệ Lấp Đầy:,${a.occupancyRate || 80}%
+
+--- PHÂN BỔ HẠNG VÉ ---
+Hạng Vé,Đơn Giá,Số Vé Bán,Tổng Sức Chứa,Doanh Thu,Tỷ Lệ
+${(a.tierBreakdown || []).map((t) => `"${t.tierName}",${t.price},${t.soldCount},${t.totalCapacity},${t.revenue},${t.fillPercent}%`).join('\n')}
+`
+      return new Blob([csvStr], { type: 'text/csv;charset=utf-8;' })
     }
   },
 

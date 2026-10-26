@@ -70,6 +70,9 @@ class CinemaServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private LoyaltyService loyaltyService;
+
     @InjectMocks
     private CinemaServiceImpl cinemaService;
 

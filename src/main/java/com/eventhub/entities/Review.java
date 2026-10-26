@@ -49,4 +49,17 @@ public class Review extends BaseEntity {
     @Column(name = "is_verified_attendee", nullable = false)
     @Builder.Default
     private Boolean isVerifiedAttendee = true;
+
+    @Column(name = "images_json", columnDefinition = "TEXT")
+    private String imagesJson;
+
+    @Column(name = "likes_count", nullable = false)
+    @Builder.Default
+    private Integer likesCount = 0;
+
+    @Column(name = "organizer_reply", columnDefinition = "TEXT")
+    private String organizerReply;
+
+    @Column(name = "organizer_reply_at")
+    private java.time.LocalDateTime organizerReplyAt;
 }

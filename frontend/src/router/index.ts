@@ -47,6 +47,14 @@ const routes: RouteRecordRaw[] = [
     component: EventDetailView,
   },
   {
+    path: '/events/:id/manage',
+    alias: ['/admin/events/:id/manage', '/admin/events/:id'],
+    redirect: (to) => ({
+      path: '/dashboard',
+      query: { tab: 'events', manageId: to.params.id },
+    }),
+  },
+  {
     path: '/cinema',
     alias: '/movies',
     name: 'cinema',

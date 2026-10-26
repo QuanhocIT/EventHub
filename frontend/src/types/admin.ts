@@ -23,13 +23,43 @@ export interface OrganizerDashboardData {
   checkInRate: number
 }
 
+export interface HourlySalesItem {
+  timeSlot: string
+  revenue: number
+  ticketsSold: number
+}
+
+export interface TierSalesItem {
+  tierName: string
+  price: number
+  soldCount: number
+  totalCapacity: number
+  revenue: number
+  fillPercent: number
+}
+
+export interface CheckInFlowItem {
+  timeSlot: string
+  count: number
+}
+
 export interface EventAnalyticsData {
   eventId: number
   eventTitle: string
+  venueName?: string
   totalRevenue: number
+  netRevenue?: number
+  discountTotal?: number
   totalTickets: number
+  totalCapacity?: number
+  occupancyRate?: number
   checkedInTickets: number
   checkInRate: number
+  averageOrderValue?: number
+  hourlySalesVelocity?: HourlySalesItem[]
+  tierBreakdown?: TierSalesItem[]
+  paymentMethods?: Record<string, number>
+  rushHourCheckIn?: CheckInFlowItem[]
 }
 
 export interface AdminUserItem {
